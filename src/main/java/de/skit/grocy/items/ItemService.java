@@ -1,9 +1,8 @@
 package de.skit.grocy.items;
 
+import de.skit.grocy.common.EntityNotFoundException;
 import de.skit.grocy.items.dto.ItemCreate;
 import de.skit.grocy.items.dto.ListItem;
-import de.skit.grocy.common.EntityNotFoundException;
-
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -20,19 +19,21 @@ public class ItemService {
         this.repository = repository;
     }
 
-    public ListItem createItem(UUID listId, UUID householdId, UUID createdBy, ItemCreate body) {
+    public ListItem createItem(UUID listId, ItemCreate body) {
         var entity = toEntity(listId, body);
         var saved = repository.save(entity);
         return toDto(saved);
     }
 
     public List<ListItem> getItems(UUID listId, String filter) {
+        String normalized = (filter == null) ? "all" : filter.toLowerCase();
         List<ItemEntity> entities;
 
-        if (filter == null || filter.isBlank()) {
-            entities = repository.findByListId(listId);
-        } else {
-            entities = repository.findByListIdAndNameContainingIgnoreCase(listId, filter);
+        switch (normalized) {
+            case "all" -> entities = repository.getAll(listId);
+            case "open" -> entities = repository.getAllUnchecked(listId);
+            case "checked" -> entities = repository.getAllChecked(listId);
+            default -> throw new IllegalArgumentException("Invalid filter: " + filter);
         }
 
         return entities.stream()
@@ -41,7 +42,8 @@ public class ItemService {
     }
 
     public Optional<ListItem> getItem(UUID listId, UUID itemId) {
-        return repository.findByListIdAndId(listId, itemId).map(this::toDto);
+        return repository.findByListIdAndId(listId, itemId)
+                .map(this::toDto);
     }
 
     public void deleteItem(UUID listId, UUID itemId) {
@@ -60,10 +62,15 @@ public class ItemService {
     }
 
     private ListItem setChecked(UUID listId, UUID itemId, boolean checked) {
-        var entity = repository.findByListIdAndId(listId, itemId).orElseThrow(() -> new EntityNotFoundException(
-                "Item " + itemId + " not found in list " + listId));
+        var entity = repository.findByListIdAndId(listId, itemId)
+                .orElseThrow(() -> new EntityNotFoundException(
+                        "Item " + itemId + " not found in list " + listId));
+
         entity.setChecked(checked);
         entity.setUpdatedAt(OffsetDateTime.now());
+        // optional: Version hochzählen:
+        entity.setVersion(entity.getVersion() + 1);
+
         var saved = repository.save(entity);
         return toDto(saved);
     }
@@ -71,36 +78,37 @@ public class ItemService {
     private ItemEntity toEntity(UUID listId, ItemCreate body) {
         var now = OffsetDateTime.now();
 
-        var entity = new ItemEntity(
+        return new ItemEntity(
                 listId,
-                body.title(), // oder body.getTitle(), je nachdem wie ItemCreate aussieht
-                body.notes(), // an deine Felder anpassen
-                false, // checked = false am Anfang
-                body.quantity(), // oder null, falls du noch kein quantity hast
-                body.unitText(), // anpassen
-                0, // sortOrder, vorerst 0 oder später berechnet
+                body.householdId(),
+                body.userId(),
+                body.title(),
+                body.quantity(),
+                body.unitText(),
+                body.categoryId(),
+                false, // checked am Anfang immer false
+                body.notes(),
+                0, // sortIndex vorerst 0
+                0, // version = 0
                 now,
                 now);
-
-        return entity;
     }
 
     private ListItem toDto(ItemEntity entity) {
         return new ListItem(
                 entity.getId(),
                 entity.getListId(),
-                /* householdId */ null, // falls dein DTO das hat und du es noch nicht aus DB holst
-                /* createdBy */ null, // dito
-                entity.getName(),
-                entity.getNote(),
-                entity.getAmount(),
-                entity.getUnit(),
-                /* categoryId */ null, // ggf. später
-                entity.getChecked(),
-                entity.getSortOrder(),
-                /* version */ 0, // wenn du Versionierung hast
+                entity.getHouseholdId(),
+                entity.getTitle(),
+                entity.getQuantity(),
+                entity.getUnitText(),
+                entity.getCategoryId(),
+                entity.isChecked(),
+                entity.getNotes(),
+                entity.getSortIndex(),
+                entity.getVersion(),
+                entity.getCreatedBy(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
     }
-
 }

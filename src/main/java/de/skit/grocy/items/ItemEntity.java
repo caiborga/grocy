@@ -1,125 +1,111 @@
 package de.skit.grocy.items;
 
+import jakarta.persistence.*;
 import java.time.OffsetDateTime;
 import java.util.UUID;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
 @Entity
 @Table(name = "items")
-
 public class ItemEntity {
+
     @Id
     @GeneratedValue
     private UUID id;
+
+    @Column(nullable = false)
     private UUID listId;
-    private String name;
-    private String note;
-    private boolean checked;
-    private Double amount;
-    private String unit;
-    private Integer sortOrder;
+
+    @Column(nullable = false)
+    private UUID householdId;
+
+    @Column(nullable = false)
+    private UUID createdBy;
+
+    @Column(nullable = false)
+    private String title;
+
+    private Double quantity;
+
+    private String unitText;
+
+    private UUID categoryId;
+
+    @Column(nullable = false)
+    private boolean checked = false;
+
+    private String notes;
+
+    @Column(nullable = false)
+    private int sortIndex = 0;
+
+    @Column(nullable = false)
+    private int version = 0;
+
+    @Column(nullable = false)
     private OffsetDateTime createdAt;
+
+    @Column(nullable = false)
     private OffsetDateTime updatedAt;
 
+    public ItemEntity() {
+        // required by JPA
+    }
+
     public ItemEntity(
-        UUID listId, 
-        String name, 
-        String note, 
-        boolean checked, 
-        Double amount, 
-        String unit,
-        Integer sortOrder, 
-        OffsetDateTime createdAt, 
-        OffsetDateTime updatedAt
-        ){
+            UUID listId,
+            UUID householdId,
+            UUID createdBy,
+            String title,
+            Double quantity,
+            String unitText,
+            UUID categoryId,
+            boolean checked,
+            String notes,
+            int sortIndex,
+            int version,
+            OffsetDateTime createdAt,
+            OffsetDateTime updatedAt) {
         this.listId = listId;
-        this.name = name;
-        this.note = note;
+        this.householdId = householdId;
+        this.createdBy = createdBy;
+        this.title = title;
+        this.quantity = quantity;
+        this.unitText = unitText;
+        this.categoryId = categoryId;
         this.checked = checked;
-        this.amount = amount;
-        this.unit = unit;
-        this.sortOrder = sortOrder;
+        this.notes = notes;
+        this.sortIndex = sortIndex;
+        this.version = version;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
 
-    public UUID getId() {
-        return this.id;
-    }
+    // ---------- Getter ----------
 
-    public UUID getListId() {
-        return this.listId;
-    }
+    public UUID getId() { return id; }
+    public UUID getListId() { return listId; }
+    public UUID getHouseholdId() { return householdId; }
+    public UUID getCreatedBy() { return createdBy; }
+    public String getTitle() { return title; }
+    public Double getQuantity() { return quantity; }
+    public String getUnitText() { return unitText; }
+    public UUID getCategoryId() { return categoryId; }
+    public boolean isChecked() { return checked; }
+    public String getNotes() { return notes; }
+    public int getSortIndex() { return sortIndex; }
+    public int getVersion() { return version; }
+    public OffsetDateTime getCreatedAt() { return createdAt; }
+    public OffsetDateTime getUpdatedAt() { return updatedAt; }
 
-    public void setListId(UUID listId) {
-        this.listId = listId;
-    }
-    
-    public String getName() {
-        return this.name;
-    }
+    // ---------- Setter ----------
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getNote() {
-        return this.note;
-    }
-
-    public void setNote(String note) {
-        this.note = note;
-    }
-
-    public boolean getChecked() {
-        return this.checked;
-    }
-
-    public void setChecked(boolean checked) {
-        this.checked = checked;
-    }
-
-    public Double getAmount() {
-        return this.amount;
-    }
-
-    public void setAmount(Double amount) {
-        this.amount = amount;
-    }
-
-    public String getUnit() {
-        return this.unit;
-    }
-
-    public void setUnit(String unit) {
-        this.unit = unit;
-    }
-
-    public Integer getSortOrder() {
-        return this.sortOrder;
-    }
-
-    public void setSortOrder(Integer sortOrder) {
-        this.sortOrder = sortOrder;
-    }
-
-    public OffsetDateTime getCreatedAt() {
-        return this.createdAt;
-    }
-
-    public void setCreatedAt(OffsetDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public OffsetDateTime getUpdatedAt() {
-        return this.updatedAt;
-    }
-
-    public void setUpdatedAt(OffsetDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
+    public void setTitle(String title) { this.title = title; }
+    public void setQuantity(Double quantity) { this.quantity = quantity; }
+    public void setUnitText(String unitText) { this.unitText = unitText; }
+    public void setCategoryId(UUID categoryId) { this.categoryId = categoryId; }
+    public void setNotes(String notes) { this.notes = notes; }
+    public void setSortIndex(int sortIndex) { this.sortIndex = sortIndex; }
+    public void setVersion(int version) { this.version = version; }
+    public void setChecked(boolean checked) { this.checked = checked; }
+    public void setUpdatedAt(OffsetDateTime updatedAt) { this.updatedAt = updatedAt; }
 }

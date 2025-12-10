@@ -4,18 +4,18 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public record ListItem(
-    UUID id,
-    UUID listId,
-    UUID householdId,
-    UUID createdBy,
-    String title,
-    String notes,
-    Double quantity,
-    String unitText,
-    UUID categoryId,
-    boolean checked,
-    int sortIndex,
-    int version,
-    OffsetDateTime createdAt,
-    OffsetDateTime updatedAt
+        UUID id,
+        UUID listId,
+        UUID householdId,
+        String title,
+        Double quantity,
+        String unitText,
+        UUID categoryId,
+        boolean checked,
+        String notes,
+        int sortIndex,
+        int version,
+        UUID createdBy,
+        OffsetDateTime createdAt,
+        OffsetDateTime updatedAt
 ) {}

@@ -4,10 +4,12 @@ import jakarta.validation.constraints.NotBlank;
 import java.util.UUID;
 
 public record ItemCreate(
-    @NotBlank String title,
-    String notes,
-    Double quantity,
-    String unitText,
-    UUID categoryId,
-    UUID clientItemId // optionaler Idempotenz-Key
+        @NotBlank String title,
+        @NotBlank UUID householdId,
+        @NotBlank UUID userId,
+        Double quantity,
+        String unitText,
+        UUID categoryId,
+        String notes,
+        UUID clientItemId
 ) {}

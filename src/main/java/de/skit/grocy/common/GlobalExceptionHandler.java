@@ -6,9 +6,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
-import de.skit.grocy.common.EntityNotFoundException;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -16,34 +13,51 @@ import java.util.stream.Collectors;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
-        var errors = ex.getBindingResult().getFieldErrors().stream()
+    public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
+        var errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
                 .collect(Collectors.groupingBy(
                         e -> e.getField(),
-                        Collectors.mapping(e -> e.getDefaultMessage(), Collectors.toList())));
+                        Collectors.mapping(e -> e.getDefaultMessage(), Collectors.toList())
+                ));
 
-        var body = Map.of(
-                "message", "Validation failed",
-                "errors", errors);
+        var body = new ErrorResponse(
+                "validation_error",
+                "Validation failed",
+                errors
+        );
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<?> handleValidation(EntityNotFoundException ex) {
-        var body = Map.of(
-                "message", ex.getMessage(),
-                "status", HttpStatus.NOT_FOUND.value());
-
+    public ResponseEntity<ErrorResponse> handleNotFound(EntityNotFoundException ex) {
+        var body = new ErrorResponse(
+                "not_found",
+                ex.getMessage(),
+                null
+        );
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(body);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
+        var body = new ErrorResponse(
+                "bad_request",
+                ex.getMessage(),
+                null
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
+    }
+
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
-        Map<String, Object> body = new HashMap<>();
-        body.put("message", "Unexpected server error");
-        body.put("error", ex.getClass().getSimpleName());
-        body.put("status", HttpStatus.INTERNAL_SERVER_ERROR.value());
+    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        var body = new ErrorResponse(
+                "internal_error",
+                "Unexpected server error",
+                Map.of("exception", ex.getClass().getSimpleName())
+        );
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body);
     }
 }
