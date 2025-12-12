@@ -1,0 +1,399 @@
+openapi: 3.0.3
+info:
+  title: Einkaufsliste API (simplified)
+  version: 1.0.0
+  description: >
+    Vereinfachte REST-API für eine mehrbenutzerfähige Einkaufsliste.
+servers:
+  - url: http://localhost:3000
+    description: Lokale Entwicklung
+security:
+  - bearerAuth: []
+
+paths:
+  /me:
+    get:
+      summary: Aktuelles Benutzerprofil
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /households:
+    get:
+      summary: Liste aller Haushalte des Benutzers
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Household'
+    post:
+      summary: Neuen Haushalt anlegen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HouseholdCreate'
+      responses:
+        '201': { description: Erstellt, content: { application/json: { schema: { $ref: '#/components/schemas/Household' } } } }
+
+  /households/{householdId}:
+    parameters:
+      - $ref: '#/components/parameters/HouseholdId'
+    get:
+      summary: Haushalt abrufen
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Household' } } } }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /households/{householdId}/invite:
+    post:
+      parameters:
+        - $ref: '#/components/parameters/HouseholdId'
+      summary: Einladung versenden
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '204': { description: OK }
+
+  /lists:
+    get:
+      summary: Listen im Haushalt
+      parameters:
+        - $ref: '#/components/parameters/ActiveHouseholdHeader'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/List'
+    post:
+      summary: Neue Liste anlegen
+      parameters:
+        - $ref: '#/components/parameters/ActiveHouseholdHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListCreate'
+      responses:
+        '201': { description: Erstellt, content: { application/json: { schema: { $ref: '#/components/schemas/List' } } } }
+
+  /lists/{listId}:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+    get:
+      summary: Liste abrufen
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/List' } } } }
+    patch:
+      summary: Liste ändern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListUpdate'
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/List' } } } }
+    delete:
+      summary: Liste löschen
+      responses:
+        '204': { description: Gelöscht }
+
+  /lists/{listId}/items:
+    parameters:
+      - $ref: '#/components/parameters/ListId'
+    get:
+      summary: Items der Liste
+      parameters:
+        - in: query
+          name: filter
+          schema: { type: string, enum: [all, open, checked] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ListItem'
+    post:
+      summary: Neues Item anlegen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemCreate'
+      responses:
+        '201': { description: Erstellt, content: { application/json: { schema: { $ref: '#/components/schemas/ListItem' } } } }
+
+  /items/{itemId}:
+    parameters:
+      - $ref: '#/components/parameters/ItemId'
+    patch:
+      summary: Item ändern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ItemUpdate'
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ListItem' } } } }
+    delete:
+      summary: Item löschen
+      responses:
+        '204': { description: Gelöscht }
+
+  /categories:
+    get:
+      summary: Kategorien auflisten
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+    post:
+      summary: Kategorie anlegen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreate'
+      responses:
+        '201': { description: Erstellt, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } }
+
+  /categories/{categoryId}:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      summary: Kategorie ändern
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Category' } } } }
+    delete:
+      summary: Kategorie löschen
+      responses:
+        '204': { description: Gelöscht }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    HouseholdId:
+      name: householdId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ActiveHouseholdHeader:
+      name: X-Household-ID
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    ListId:
+      name: listId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ItemId:
+      name: itemId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+
+  responses:
+    Unauthorized:
+      description: Nicht authentifiziert
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Ressource nicht gefunden
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  schemas:
+    MeResponse:
+      type: object
+      properties:
+        user: { $ref: '#/components/schemas/User' }
+        memberships:
+          type: array
+          items: { $ref: '#/components/schemas/Membership' }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        displayName: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    Household:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        createdAt: { type: string, format: date-time }
+
+    HouseholdCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    Role:
+      type: string
+      enum: [owner, editor, viewer]
+
+    Membership:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        householdId: { type: string, format: uuid }
+        role: { $ref: '#/components/schemas/Role' }
+
+    List:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        householdId: { type: string, format: uuid }
+        title: { type: string }
+        archived: { type: boolean }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        version: { type: integer }
+        stats:
+          type: object
+          properties:
+            total: { type: integer }
+            checked: { type: integer }
+
+    ListCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+
+    ListUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        archived: { type: boolean }
+        ifMatchVersion: { type: integer }
+
+    ListItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        listId: { type: string, format: uuid }
+        householdId: { type: string, format: uuid }
+        title: { type: string }
+        quantity: { type: number, nullable: true }
+        unitText: { type: string, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
+        checked: { type: boolean }
+        notes: { type: string, nullable: true }
+        sortIndex: { type: integer }
+        version: { type: integer }
+        createdBy: { type: string, format: uuid }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    ItemCreate:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string }
+        quantity: { type: number, nullable: true }
+        unitText: { type: string, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
+        notes: { type: string, nullable: true }
+        clientItemId:
+          type: string
+          format: uuid
+          description: Idempotenz-Key für Optimistic UI
+
+    ItemUpdate:
+      type: object
+      properties:
+        title: { type: string, nullable: true }
+        quantity: { type: number, nullable: true }
+        unitText: { type: string, nullable: true }
+        categoryId: { type: string, format: uuid, nullable: true }
+        checked: { type: boolean, nullable: true }
+        notes: { type: string, nullable: true }
+        sortIndex: { type: integer, nullable: true }
+        ifMatchVersion: { type: integer }
+
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        householdId: { type: string, format: uuid }
+        name: { type: string }
+
+    CategoryCreate:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }
+        details: { type: object }
