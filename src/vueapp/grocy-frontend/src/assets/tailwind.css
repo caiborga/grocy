@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.el-loading-mask {
+  backdrop-filter: blur(1px);
+  -webkit-backdrop-filter: blur(1px); /* Safari */
+}
+

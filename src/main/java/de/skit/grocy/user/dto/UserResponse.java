@@ -5,8 +5,9 @@ import java.util.UUID;
 
 public record UserResponse(
         UUID id,
-        String name,
+        String displayName,
         String email,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        UUID activeHouseholdId
 ) {}

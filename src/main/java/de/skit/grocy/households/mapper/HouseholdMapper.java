@@ -1,11 +1,16 @@
 package de.skit.grocy.households.mapper;
 
+import java.util.List;
+
 import org.springframework.stereotype.Component;
 
 import de.skit.grocy.households.HouseholdEntity;
 import de.skit.grocy.households.dto.HouseholdCreate;
+import de.skit.grocy.households.dto.HouseholdDetailResponse;
 import de.skit.grocy.households.dto.HouseholdResponse;
 import de.skit.grocy.households.dto.HouseholdUpdate;
+import de.skit.grocy.households.member.dto.HouseholdMemberResponse;
+import de.skit.grocy.lists.dto.ListResponse;
 
 @Component
 public class HouseholdMapper {
@@ -16,8 +21,21 @@ public class HouseholdMapper {
                 entity.getName(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                entity.getArchived()
-            );
+                entity.getArchived());
+    }
+
+    public HouseholdDetailResponse toDetailDto(
+            HouseholdEntity entity,
+            List<HouseholdMemberResponse> members,
+            List<ListResponse> lists) {
+        return new HouseholdDetailResponse(
+                entity.getId(),
+                entity.getName(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.getArchived(),
+                members,
+                lists);
     }
 
     public HouseholdEntity toEntity(HouseholdCreate dto) {

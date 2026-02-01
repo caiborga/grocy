@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import jakarta.transaction.Transactional;
+import de.skit.grocy.lists.ListEntity;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,27 +13,19 @@ import java.util.UUID;
 
 public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
 
-    List<ItemEntity> findByListId(UUID listId);
+    List<ItemEntity> findByList(ListEntity list);
 
-    List<ItemEntity> findByListIdAndChecked(UUID listId, boolean checked);
+    List<ItemEntity> findByListAndChecked(ListEntity list, boolean checked);
 
-    Optional<ItemEntity> findByListIdAndId(UUID listId, UUID id);
-
-    int countByListId(UUID listId);
-
-    int countByListIdAndChecked(UUID listId, boolean checked);
+    Optional<ItemEntity> findByIdAndList(UUID id, ListEntity list);
 
     @Modifying
-    @Transactional
-    int deleteByListIdAndId(UUID listId, UUID id);
+    @Query("delete from ItemEntity i where i.list = :list and i.checked = true")
+    int deleteByListAndCheckedTrue(@Param("list") ListEntity list);
 
-    // GET ITEMS
-    @Query(value = "SELECT * FROM items WHERE list_id = :listId", nativeQuery = true)
-    List<ItemEntity> getAll(@Param("listId") UUID listId);
+    void deleteByIdAndList(UUID id, ListEntity list);
 
-    @Query(value = "SELECT * FROM items WHERE list_id = :listId AND checked = false", nativeQuery = true)
-    List<ItemEntity> getAllUnchecked(@Param("listId") UUID listId);
+    long countByList(ListEntity list);
 
-    @Query(value = "SELECT * FROM items WHERE list_id = :listId AND checked = true", nativeQuery = true)
-    List<ItemEntity> getAllChecked(@Param("listId") UUID listId);
+    long countByListAndChecked(ListEntity list, boolean checked);
 }

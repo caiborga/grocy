@@ -21,11 +21,11 @@ public class UserEntity {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String email;
 
     @Column(nullable = false)
-    private String password;
+    private String passwordHash;
 
     @Column(nullable = false)
     private String displayName;
@@ -39,7 +39,16 @@ public class UserEntity {
     @OneToMany(mappedBy = "user")
     private List<HouseholdMemberEntity> households = new ArrayList<>();
 
+    @Column(name = "active_household_id")
+    private UUID activeHouseholdId;
+
     public UserEntity() {
+    }
+
+    public UserEntity(String email, String passwordHash, String displayName) {
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.displayName = displayName;
     }
 
     @PrePersist
@@ -66,12 +75,20 @@ public class UserEntity {
         return displayName;
     }
 
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
     public OffsetDateTime getCreatedAt() {
         return createdAt;
     }
 
     public OffsetDateTime getUpdatedAt() {
         return updatedAt;
+    }
+
+    public UUID getActiveHouseholdId() {
+        return activeHouseholdId;
     }
 
     // ---------- Setter ----------
@@ -84,8 +101,8 @@ public class UserEntity {
         this.displayName = displayName;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public void setCreatedAt(OffsetDateTime createdAt) {
@@ -94,5 +111,9 @@ public class UserEntity {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setActiveHouseholdId(UUID activeHouseholdId) {
+        this.activeHouseholdId = activeHouseholdId;
     }
 }

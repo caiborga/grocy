@@ -1,4 +1,4 @@
-package de.skit.grocy.common;
+package de.skit.grocy.common.exceptions;
 
 public class EntityNotFoundException extends RuntimeException {
     public EntityNotFoundException(String message) {

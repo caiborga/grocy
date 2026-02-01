@@ -24,6 +24,9 @@ public class ListEntity {
     @Column(nullable = false)
     private boolean archived = false;
 
+    @Column(nullable = false)
+    private boolean isDefault;
+
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
     private UserEntity createdBy;
@@ -34,7 +37,6 @@ public class ListEntity {
     @Column(nullable = false)
     private OffsetDateTime updatedAt;
 
-    // FEHLER IN DEFINITION!
     @Version
     private int version;
 
@@ -100,6 +102,10 @@ public class ListEntity {
         this.archived = archived;
     }
 
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
+    }
+
     public void setCreatedBy(UserEntity createdBy) {
         this.createdBy = createdBy;
     }
@@ -108,6 +114,10 @@ public class ListEntity {
 
     public boolean isArchived() {
         return archived;
+    }
+
+    public boolean isDefault() {
+        return isDefault;
     }
 
 }

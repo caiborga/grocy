@@ -5,6 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import de.skit.grocy.user.UserEntity;
+import de.skit.grocy.common.enums.Role;
 import de.skit.grocy.households.HouseholdEntity;
 
 @Entity
@@ -22,11 +23,13 @@ public class HouseholdMemberEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private UserEntity user;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String role = "MEMBER";
+    private Role role;
 
     @Column(nullable = false)
     private OffsetDateTime joinedAt = OffsetDateTime.now();
+    
 
     public HouseholdMemberEntity() {}
 
@@ -44,7 +47,7 @@ public class HouseholdMemberEntity {
         return user;
     }
 
-    public String getRole() {
+    public Role getRole() {
         return role;
     }
 
@@ -62,7 +65,7 @@ public class HouseholdMemberEntity {
         this.user = user;
     }
 
-    public void setRole(String role) {
+    public void setRole(Role role) {
         this.role = role;
     }
 }

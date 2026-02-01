@@ -7,4 +7,5 @@ import java.util.UUID;
 
 public interface HouseholdRepository extends JpaRepository<HouseholdEntity, UUID> {
     List<HouseholdEntity> findAll();
+    List<HouseholdEntity> findDistinctByMembersUserId(UUID userId);
 }

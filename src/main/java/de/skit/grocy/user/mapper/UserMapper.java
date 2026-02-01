@@ -1,12 +1,9 @@
 package de.skit.grocy.user.mapper;
 
-import java.time.OffsetDateTime;
-
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import de.skit.grocy.user.UserEntity;
-import de.skit.grocy.user.UserRepository;
 import de.skit.grocy.user.dto.UserCreate;
 import de.skit.grocy.user.dto.UserResponse;
 import de.skit.grocy.user.dto.UserUpdate;
@@ -15,7 +12,7 @@ import de.skit.grocy.user.dto.UserUpdate;
 public class UserMapper {
     private final PasswordEncoder encoder;
 
-    public UserMapper(UserRepository repository, PasswordEncoder encoder) {
+    public UserMapper(PasswordEncoder encoder) {
         this.encoder = encoder;
     }
 
@@ -24,9 +21,7 @@ public class UserMapper {
         UserEntity entity = new UserEntity();
         entity.setDisplayName(dto.displayName());
         entity.setEmail(dto.email());
-        entity.setPassword(encoder.encode(dto.password()));
-        entity.setCreatedAt(OffsetDateTime.now());
-        entity.setUpdatedAt(OffsetDateTime.now());
+        entity.setPasswordHash(encoder.encode(dto.password()));
         return entity;
     }
 
@@ -36,7 +31,9 @@ public class UserMapper {
                 entity.getName(),
                 entity.getEmail(),
                 entity.getCreatedAt(),
-                entity.getUpdatedAt());
+                entity.getUpdatedAt(),
+                entity.getActiveHouseholdId()
+            );
     }
 
     public void applyPatch(UserUpdate patch, UserEntity entity) {
@@ -47,7 +44,7 @@ public class UserMapper {
             entity.setEmail(patch.email());
         }
         if (patch.password() != null) {
-            entity.setPassword(encoder.encode(patch.password()));
+            entity.setPasswordHash(encoder.encode(patch.password()));
         }
     }
 }
