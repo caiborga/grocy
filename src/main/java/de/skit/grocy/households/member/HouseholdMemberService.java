@@ -4,6 +4,8 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import de.skit.grocy.common.enums.Role;
+import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.households.HouseholdEntity;
 import de.skit.grocy.households.HouseholdRepository;
 import de.skit.grocy.user.UserEntity;
@@ -26,7 +28,7 @@ public class HouseholdMemberService {
         this.memberRepository = memberRepository;
     }
 
-    public HouseholdMemberEntity addUserToHousehold(UUID householdId, UUID userId, String role) {
+    public HouseholdMemberEntity addUserToHousehold(UUID householdId, UUID userId, Role role) {
 
         // 1. Get Household
         HouseholdEntity household = householdRepository.findById(householdId)
@@ -50,6 +52,53 @@ public class HouseholdMemberService {
 
         // 5. Save
         return memberRepository.save(member);
+    }
+
+    public HouseholdMemberEntity addUserToHouseholdIfNotExists(UUID householdId, UUID userId, Role role) {
+        if (memberRepository.existsByHouseholdIdAndUserId(householdId, userId)) {
+            return memberRepository.findByHouseholdIdAndUserId(householdId, userId)
+                    .orElseThrow(); // sollte existieren
+        }
+        return addUserToHousehold(householdId, userId, role);
+    }
+
+    @Transactional
+    public HouseholdMemberEntity editUserRole(
+            UUID householdId,
+            UUID targetUserId,
+            Role newRole,
+            UUID actingUserId) {
+        // 1. Get target user
+        HouseholdMemberEntity target = memberRepository
+                .findByHouseholdIdAndUserId(householdId, targetUserId)
+                .orElseThrow(() -> new NotFoundException("User is not member of this household"));
+
+        // 2. Aktuellen Benutzer laden
+        HouseholdMemberEntity actor = memberRepository
+                .findByHouseholdIdAndUserId(householdId, actingUserId)
+                .orElseThrow(() -> new NotFoundException("You are not member of this household"));
+
+        // 3. Berechtigung prüfen
+        if (actor.getRole() != Role.OWNER) {
+            throw new NotFoundException("Only OWNER can change roles");
+        }
+
+        // 4. Selbstschutz
+        if (targetUserId.equals(actingUserId)) {
+            throw new NotFoundException("You cannot change your own role");
+        }
+
+        // 5. OWNER-Schutz
+        if (target.getRole() == Role.OWNER && newRole != Role.OWNER) {
+            long ownerCount = memberRepository.countByHouseholdIdAndRole(householdId, Role.OWNER);
+            if (ownerCount <= 1) {
+                throw new NotFoundException("Household must have at least one OWNER");
+            }
+        }
+
+        // 6. Update
+        target.setRole(newRole);
+        return memberRepository.save(target);
     }
 
     @Transactional

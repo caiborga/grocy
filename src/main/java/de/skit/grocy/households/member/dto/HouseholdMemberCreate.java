@@ -2,4 +2,9 @@ package de.skit.grocy.households.member.dto;
 
 import java.util.UUID;
 
-public record HouseholdMemberCreate(UUID userId, String role) {}
+import de.skit.grocy.common.enums.Role;
+
+public record HouseholdMemberCreate(
+        UUID userId,
+        Role role) {
+}

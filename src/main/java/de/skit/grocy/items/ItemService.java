@@ -1,11 +1,21 @@
 package de.skit.grocy.items;
 
-import de.skit.grocy.common.EntityNotFoundException;
+import de.skit.grocy.common.exceptions.EntityNotFoundException;
+import de.skit.grocy.common.exceptions.NotFoundException;
+import de.skit.grocy.households.HouseholdEntity;
+import de.skit.grocy.households.member.HouseholdMemberRepository;
 import de.skit.grocy.items.dto.ItemCreate;
+import de.skit.grocy.items.dto.ItemPatch;
 import de.skit.grocy.items.dto.ListItem;
+import de.skit.grocy.lists.ListEntity;
+import de.skit.grocy.lists.ListRepository;
+import de.skit.grocy.security.UserPrincipal;
+import de.skit.grocy.user.UserEntity;
+import jakarta.transaction.Transactional;
+
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,91 +24,191 @@ import java.util.UUID;
 public class ItemService {
 
     private final ItemRepository repository;
+    private final ListRepository listRepository;
+    private final HouseholdMemberRepository householdMemberRepository;
 
-    public ItemService(ItemRepository repository) {
+    public ItemService(
+            ItemRepository repository,
+            ListRepository listRepository,
+            HouseholdMemberRepository householdMemberRepository) {
         this.repository = repository;
+        this.listRepository = listRepository;
+        this.householdMemberRepository = householdMemberRepository;
     }
 
-    public ListItem createItem(UUID listId, ItemCreate body) {
-        var entity = toEntity(listId, body);
-        var saved = repository.save(entity);
-        return toDto(saved);
+    @Transactional
+    public ListItem createItem(
+            UUID listId,
+            ItemCreate dto,
+            UserPrincipal principal) {
+
+        UserEntity user = principal.getUser();
+
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new NotFoundException("List not found"));
+
+        assertUserIsMemberOfHousehold(user, list.getHousehold());
+
+        ItemEntity item = new ItemEntity();
+        item.setTitle(dto.title());
+        item.setList(list);
+        item.setHousehold(list.getHousehold());
+        item.setCreatedBy(user);
+        item.setQuantity(dto.quantity());
+        item.setUnitText(dto.unitText());
+        item.setNotes(dto.notes());
+
+        repository.save(item);
+
+        return toDto(item);
     }
 
-    public List<ListItem> getItems(UUID listId, String filter) {
+    public List<ListItem> getItems(
+            UUID listId,
+            String filter,
+            UserPrincipal principal) {
+
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+
+        assertUserIsMemberOfHousehold(
+                principal.getUser(),
+                list.getHousehold());
+
         String normalized = (filter == null) ? "all" : filter.toLowerCase();
-        List<ItemEntity> entities;
 
-        switch (normalized) {
-            case "all" -> entities = repository.getAll(listId);
-            case "open" -> entities = repository.getAllUnchecked(listId);
-            case "checked" -> entities = repository.getAllChecked(listId);
+        List<ItemEntity> entities = switch (normalized) {
+            case "all" -> repository.findByList(list);
+            case "open" -> repository.findByListAndChecked(list, false);
+            case "checked" -> repository.findByListAndChecked(list, true);
             default -> throw new IllegalArgumentException("Invalid filter: " + filter);
-        }
+        };
 
         return entities.stream()
                 .map(this::toDto)
                 .toList();
     }
 
-    public Optional<ListItem> getItem(UUID listId, UUID itemId) {
-        return repository.findByListIdAndId(listId, itemId)
+    public Optional<ListItem> getItem(
+            UUID listId,
+            UUID itemId,
+            UserPrincipal principal) {
+
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+
+        assertUserIsMemberOfHousehold(
+                principal.getUser(),
+                list.getHousehold());
+
+        return repository.findByIdAndList(itemId, list)
                 .map(this::toDto);
     }
 
-    public void deleteItem(UUID listId, UUID itemId) {
-        int deletedRows = repository.deleteByListIdAndId(listId, itemId);
-        if (deletedRows == 0) {
-            throw new EntityNotFoundException("Item " + itemId + " not found in list " + listId);
+    @Transactional
+    public ListItem deleteItem(
+            UUID listId,
+            UUID itemId,
+            UserPrincipal principal) {
+
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+
+        assertUserIsMemberOfHousehold(
+                principal.getUser(),
+                list.getHousehold());
+
+        ItemEntity item = repository.findByIdAndList(itemId, list)
+                .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        repository.delete(item);
+        return toDto(item);
+
+    }
+
+    @Transactional
+    public int deleteCheckedItems(UUID listId, UserPrincipal principal) {
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+
+        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+
+        return repository.deleteByListAndCheckedTrue(list);
+    }
+
+    @Transactional
+    public ListItem setChecked(
+            UUID listId,
+            UUID itemId,
+            boolean checked,
+            UserPrincipal principal) {
+
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+
+        assertUserIsMemberOfHousehold(
+                principal.getUser(),
+                list.getHousehold());
+
+        ItemEntity item = repository.findByIdAndList(itemId, list)
+                .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        item.setChecked(checked);
+
+        return toDto(item);
+    }
+
+    @Transactional
+    public ListItem updateItem(
+            UUID listId,
+            UUID itemId,
+            ItemPatch body,
+            UserPrincipal principal) {
+        // 1. Liste laden
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new EntityNotFoundException("List not found"));
+
+        // 2. Berechtigung prüfen
+        assertUserIsMemberOfHousehold(
+                principal.getUser(),
+                list.getHousehold());
+
+        // 3. Item laden
+        ItemEntity item = repository.findByIdAndList(itemId, list)
+                .orElseThrow(() -> new EntityNotFoundException("Item not found"));
+
+        boolean changed = false;
+
+        // 4. checked patchen (auch false zulassen!)
+        if (body.checked() != null) {
+            item.setChecked(body.checked());
+            changed = true;
         }
-    }
 
-    public ListItem checkItem(UUID listId, UUID itemId) {
-        return setChecked(listId, itemId, true);
-    }
+        // 5. title patchen (wenn vorhanden → validieren)
+        if (body.title() != null) {
+            String trimmed = body.title().trim();
+            if (trimmed.isEmpty()) {
+                throw new IllegalArgumentException("title must not be blank");
+            }
+            item.setTitle(trimmed);
+            changed = true;
+        }
 
-    public ListItem uncheckItem(UUID listId, UUID itemId) {
-        return setChecked(listId, itemId, false);
-    }
+        // 6. Optional: nichts zu patchen → Fehler
+        if (!changed) {
+            throw new IllegalArgumentException("No fields provided to update");
+        }
 
-    private ListItem setChecked(UUID listId, UUID itemId, boolean checked) {
-        var entity = repository.findByListIdAndId(listId, itemId)
-                .orElseThrow(() -> new EntityNotFoundException(
-                        "Item " + itemId + " not found in list " + listId));
-
-        entity.setChecked(checked);
-        entity.setUpdatedAt(OffsetDateTime.now());
-        // optional: Version hochzählen:
-        entity.setVersion(entity.getVersion() + 1);
-
-        var saved = repository.save(entity);
-        return toDto(saved);
-    }
-
-    private ItemEntity toEntity(UUID listId, ItemCreate body) {
-        var now = OffsetDateTime.now();
-
-        return new ItemEntity(
-                listId,
-                body.householdId(),
-                body.userId(),
-                body.title(),
-                body.quantity(),
-                body.unitText(),
-                body.categoryId(),
-                false, // checked am Anfang immer false
-                body.notes(),
-                0, // sortIndex vorerst 0
-                0, // version = 0
-                now,
-                now);
+        // 7. JPA dirty checking übernimmt das Speichern
+        return toDto(item);
     }
 
     private ListItem toDto(ItemEntity entity) {
         return new ListItem(
                 entity.getId(),
-                entity.getListId(),
-                entity.getHouseholdId(),
+                entity.getList().getId(),
+                entity.getHousehold().getId(),
                 entity.getTitle(),
                 entity.getQuantity(),
                 entity.getUnitText(),
@@ -107,8 +217,21 @@ public class ItemService {
                 entity.getNotes(),
                 entity.getSortIndex(),
                 entity.getVersion(),
-                entity.getCreatedBy(),
+                entity.getCreatedBy().getId(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt());
+    }
+
+    private void assertUserIsMemberOfHousehold(
+            UserEntity user,
+            HouseholdEntity household) {
+
+        boolean isMember = householdMemberRepository
+                .existsByUserAndHousehold(user, household);
+
+        if (!isMember) {
+            throw new AccessDeniedException(
+                    "User is not a member of this household");
+        }
     }
 }

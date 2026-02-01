@@ -5,63 +5,128 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
-import de.skit.grocy.common.NotFoundException;
+import de.skit.grocy.common.enums.Role;
+import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.households.dto.HouseholdCreate;
+import de.skit.grocy.households.dto.HouseholdDetailResponse;
 import de.skit.grocy.households.dto.HouseholdResponse;
 import de.skit.grocy.households.dto.HouseholdUpdate;
 import de.skit.grocy.households.mapper.HouseholdMapper;
 import de.skit.grocy.households.member.HouseholdMemberEntity;
 import de.skit.grocy.households.member.HouseholdMemberRepository;
+import de.skit.grocy.households.member.dto.HouseholdMemberResponse;
+import de.skit.grocy.households.member.mapper.HouseholdMemberMapper;
+import de.skit.grocy.items.ItemRepository;
+import de.skit.grocy.lists.ListEntity;
+import de.skit.grocy.lists.ListRepository;
+import de.skit.grocy.lists.dto.Stats;
+import de.skit.grocy.lists.mapper.ListMapper;
+import de.skit.grocy.security.UserPrincipal;
 import de.skit.grocy.user.UserEntity;
 import de.skit.grocy.user.UserRepository;
+import de.skit.grocy.user.dto.UserResponse;
+import de.skit.grocy.user.mapper.UserMapper;
 import jakarta.transaction.Transactional;
 
 @Service
 public class HouseholdService {
     private final HouseholdRepository householdRepository;
     private final HouseholdMemberRepository householdMemberRepository;
-    private final UserRepository userRepository;
-    private final HouseholdMapper mapper;
+    private final ListRepository listRepository;
+    private final ItemRepository itemRepository;
+    private final HouseholdMapper householdMapper;
+    private final HouseholdMemberMapper memberMapper;
+    private final ListMapper listMapper;
 
     public HouseholdService(
             HouseholdRepository householdRepository,
             HouseholdMemberRepository householdMemberRepository,
             UserRepository userRepository,
-            HouseholdMapper mapper) {
+            ListRepository listRepository,
+            ItemRepository itemRepository,
+            HouseholdMapper householdMapper,
+            HouseholdMemberMapper memberMapper,
+            ListMapper listMapper) {
         this.householdRepository = householdRepository;
         this.householdMemberRepository = householdMemberRepository;
-        this.userRepository = userRepository;
-        this.mapper = mapper;
+        this.listRepository = listRepository;
+        this.itemRepository = itemRepository;
+        this.householdMapper = householdMapper;
+        this.memberMapper = memberMapper;
+        this.listMapper = listMapper;
     }
 
     public List<HouseholdResponse> getAllHouseholds() {
         return householdRepository.findAll()
                 .stream()
-                .map(mapper::toDto)
+                .map(householdMapper::toDto)
                 .toList();
     }
 
-    public HouseholdResponse addHousehold(HouseholdCreate dto) {
-        HouseholdEntity entity = mapper.toEntity(dto);
-        HouseholdEntity saved = householdRepository.save(entity);
+    public List<HouseholdResponse> getAllUserHouseholds(UserPrincipal principal) {
+        return householdRepository.findDistinctByMembersUserId(principal.getUser().getId())
+                .stream()
+                .map(householdMapper::toDto)
+                .toList();
+    }
 
-        UserEntity creator = userRepository.findById(dto.createdBy())
-            .orElseThrow(() -> new NotFoundException("User not found"));
+    @Transactional
+    public HouseholdResponse addHousehold(
+            HouseholdCreate dto,
+            UserPrincipal principal) {
 
+        // Create Household
+        HouseholdEntity household = householdMapper.toEntity(dto);
+        HouseholdEntity saved = householdRepository.save(household);
+
+        // CreatedBy -> SecurityContext
+        UserEntity creator = principal.getUser();
+
+        // Membership
         HouseholdMemberEntity member = new HouseholdMemberEntity();
         member.setHousehold(saved);
         member.setUser(creator);
-        member.setRole("ADMIN");
+        member.setRole(Role.OWNER);
 
         householdMemberRepository.save(member);
 
-        return mapper.toDto(saved);
+        // Default list
+        ListEntity defaultList = new ListEntity();
+        defaultList.setTitle("Einkaufsliste");
+        defaultList.setHousehold(saved);
+        defaultList.setCreatedBy(creator);
+        defaultList.setDefault(true);
+        defaultList.setArchived(false);
+
+        listRepository.save(defaultList);
+
+        // Response
+        return householdMapper.toDto(saved);
     }
 
-    public HouseholdResponse getHousehold(UUID id) {
-        HouseholdEntity entity = householdRepository.findById(id)
+    public HouseholdDetailResponse getHousehold(UUID id, UserPrincipal principal) {
+        HouseholdEntity household = householdRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Household " + id + " not found"));
-        return mapper.toDto(entity);
+
+        var members = householdMemberRepository.findByHouseholdId(household.getId());
+        var lists = listRepository.findByHouseholdId(household.getId());
+
+        var memberDtos = members.stream()
+                .map(m -> memberMapper.toDto(m))
+                .toList();
+
+        var listDtos = lists.stream()
+                .map(l -> {
+                    long total = itemRepository.countByList(l);
+                    long checked = itemRepository.countByListAndChecked(l, true);
+                    Stats stats = new Stats((int) total, (int) checked);
+                    return listMapper.toResponse(l, stats);
+                })
+                .toList();
+
+        var householdDto = householdMapper.toDetailDto(household, memberDtos, listDtos);
+
+        return householdDto;
     }
 
     @Transactional
@@ -70,10 +135,10 @@ public class HouseholdService {
         HouseholdEntity entity = householdRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Household " + id + " not found"));
 
-        mapper.applyPatch(update, entity);
+        householdMapper.applyPatch(update, entity);
 
         HouseholdEntity updated = householdRepository.save(entity);
 
-        return mapper.toDto(updated);
+        return householdMapper.toDto(updated);
     }
 }

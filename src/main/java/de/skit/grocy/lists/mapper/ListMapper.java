@@ -19,7 +19,8 @@ public class ListMapper {
             entity.getId(),
             entity.getTitle(),
             entity.isArchived(),
-            stats
+            stats,
+            entity.isDefault()
         );
     }
 }

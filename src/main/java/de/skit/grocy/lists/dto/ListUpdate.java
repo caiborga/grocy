@@ -1,5 +1,6 @@
 package de.skit.grocy.lists.dto;
 
 public record ListUpdate(
-    String title
+    String title,
+    boolean isDefault
 ){}

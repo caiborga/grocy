@@ -1,15 +1,19 @@
 package de.skit.grocy.user;
 
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import de.skit.grocy.common.NotFoundException;
+import de.skit.grocy.common.enums.Role;
+import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.households.HouseholdEntity;
-import de.skit.grocy.households.dto.HouseholdUpdate;
+import de.skit.grocy.households.HouseholdRepository;
+import de.skit.grocy.households.member.HouseholdMemberEntity;
+import de.skit.grocy.households.member.HouseholdMemberRepository;
+import de.skit.grocy.lists.ListEntity;
+import de.skit.grocy.lists.ListRepository;
 import de.skit.grocy.user.dto.UserCreate;
 import de.skit.grocy.user.dto.UserResponse;
 import de.skit.grocy.user.dto.UserUpdate;
@@ -20,19 +24,62 @@ import jakarta.transaction.Transactional;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder encoder;
+    private final HouseholdRepository householdRepository;
+    private final HouseholdMemberRepository householdMemberRepository;
+    private final ListRepository listRepository;
     private final UserMapper mapper;
+    private final PasswordEncoder encoder;
 
-    public UserService(UserRepository userRepository, PasswordEncoder encoder, UserMapper mapper) {
+    public UserService(UserRepository userRepository, HouseholdRepository householdRepository,
+            HouseholdMemberRepository householdMemberRepository, UserMapper mapper, PasswordEncoder encoder,
+            ListRepository listRepository) {
         this.userRepository = userRepository;
-        this.encoder = encoder;
+        this.householdRepository = householdRepository;
+        this.householdMemberRepository = householdMemberRepository;
+        this.listRepository = listRepository;
         this.mapper = mapper;
+        this.encoder = encoder;
+
     }
 
+    @Transactional
     public UserResponse createUser(UserCreate dto) {
-        UserEntity entity = mapper.toEntity(dto);
-        UserEntity saved = userRepository.save(entity);
-        return mapper.toDto(saved);
+
+        // 1️⃣ User anlegen
+        UserEntity user = new UserEntity();
+        user.setEmail(dto.email());
+        user.setDisplayName(dto.displayName());
+        user.setPasswordHash(encoder.encode(dto.password()));
+
+        UserEntity savedUser = userRepository.save(user);
+
+        // 2️⃣ Household anlegen
+        HouseholdEntity household = new HouseholdEntity();
+        household.setName("Neuer Haushalt");
+
+        HouseholdEntity savedHousehold = householdRepository.save(household);
+
+        savedUser.setActiveHouseholdId(savedHousehold.getId());
+
+        // 3️⃣ Membership anlegen
+        HouseholdMemberEntity member = new HouseholdMemberEntity();
+        member.setUser(savedUser);
+        member.setHousehold(savedHousehold);
+        member.setRole(Role.OWNER);
+
+        householdMemberRepository.save(member);
+
+        // 4️⃣ Default-Liste anlegen
+        ListEntity defaultList = new ListEntity();
+        defaultList.setTitle("Einkaufsliste");
+        defaultList.setHousehold(savedHousehold);
+        defaultList.setCreatedBy(savedUser);
+        defaultList.setDefault(true);
+        defaultList.setArchived(false);
+
+        listRepository.save(defaultList);
+
+        return mapper.toDto(savedUser);
     }
 
     public List<UserResponse> getAllUsers() {

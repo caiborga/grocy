@@ -1,4 +1,4 @@
-package de.skit.grocy.common;
+package de.skit.grocy.common.exceptions;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

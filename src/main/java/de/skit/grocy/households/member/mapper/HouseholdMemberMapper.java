@@ -14,8 +14,8 @@ public class HouseholdMemberMapper {
             entity.getHousehold().getId(),
             entity.getUser().getId(),
             entity.getRole(),
-            entity.getJoinedAt()
+            entity.getJoinedAt(),
+            entity.getUser().getName()
         );
     }
 }
-
