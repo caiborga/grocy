@@ -34,3 +34,6 @@ build/
 
 ### NODE ###
 node_modules/
+
+### local config ###
+application-local.yml
