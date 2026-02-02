@@ -10,9 +10,5 @@ spring:
             hibernate:
                 format_sql: true
 
-    mvc:
-        servlet:
-            path: /api
-
 server:
     port: ${PORT:8000}

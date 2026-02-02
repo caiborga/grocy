@@ -13,14 +13,11 @@ import de.skit.grocy.households.invites.dto.HouseholdInvitePreviewResponse;
 import de.skit.grocy.security.UserPrincipal;
 
 @RestController
+@RequestMapping("/api")
 public class HouseholdInviteController {
 
     private final HouseholdInviteService inviteService;
 
-    /**
-     * Base URL deiner Frontend-App (für Join-Link).
-     * z.B. http://localhost:5173 oder https://app.de
-     */
     private final String publicAppBaseUrl;
 
     public HouseholdInviteController(
@@ -32,7 +29,7 @@ public class HouseholdInviteController {
     }
 
     // ------------------------------------------------------------
-    // POST /households/{householdId}/invites  (Invite erstellen)
+    // POST /households/{householdId}/invites  (Invite)
     // ------------------------------------------------------------
     @PostMapping("/households/{householdId}/invites")
     @ResponseStatus(HttpStatus.CREATED)

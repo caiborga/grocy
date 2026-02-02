@@ -26,27 +26,27 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-
         http
-                // Disable CSRF
                 .csrf(csrf -> csrf.disable())
-
-                // No session (JWT = stateless)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
-                // Endpoints
                 .authorizeHttpRequests(auth -> auth
+                        // Frontend / static
                         .requestMatchers(
-                                "/auth/**",
-                                "/users" // Registrierung
-                        ).permitAll()
-                        .anyRequest().authenticated())
+                                "/", "/index.html",
+                                "/assets/**", "/favicon.ico",
+                                "/*.js", "/*.css", "/*.svg", "/*.png", "/*.woff2")
+                        .permitAll()
 
-                // Hide Browser-Login
+                        // Public API
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/users")
+                        .permitAll()
+
+                        // Everything else requires JWT
+                        .anyRequest().authenticated())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
-
-                // Add JWT-Filter before UsernamePasswordAuthFilter
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

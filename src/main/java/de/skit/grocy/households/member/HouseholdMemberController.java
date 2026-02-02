@@ -18,7 +18,7 @@ import de.skit.grocy.households.member.mapper.HouseholdMemberMapper;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
-@RequestMapping("/households")
+@RequestMapping("/api/households")
 public class HouseholdMemberController {
     private final HouseholdMemberService service;
     private final HouseholdMemberMapper mapper;

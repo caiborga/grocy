@@ -12,7 +12,7 @@ import java.util.Map;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/lists/{listId}/items")
+@RequestMapping("/api/lists/{listId}/items")
 public class ItemController {
 
     private final ItemService service;

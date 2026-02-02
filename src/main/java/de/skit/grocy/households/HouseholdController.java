@@ -21,7 +21,7 @@ import de.skit.grocy.security.UserPrincipal;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/households")
+@RequestMapping("/api/households")
 class HouseholdController {
 
     private final HouseholdService service;

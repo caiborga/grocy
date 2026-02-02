@@ -18,7 +18,7 @@ import de.skit.grocy.user.dto.UserUpdate;
 import jakarta.validation.Valid;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 class UserController {
 
     private final UserService service;

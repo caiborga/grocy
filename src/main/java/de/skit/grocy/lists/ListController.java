@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.households.HouseholdRepository;
@@ -21,6 +22,7 @@ import de.skit.grocy.security.UserPrincipal;
 import de.skit.grocy.user.UserRepository;
 
 @RestController
+@RequestMapping("/api")
 class ListController {
 
     private final ListService service;
