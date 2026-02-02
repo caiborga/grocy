@@ -34,7 +34,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/", "/index.html",
                                 "/assets/**", "/favicon.ico",
-                                "/*.js", "/*.css", "/*.svg", "/*.png", "/*.woff2")
+                                "/*.js", "/*.css", "/*.svg", "/*.png", "/*.woff2", "/join")
                         .permitAll()
 
                         // Public API
