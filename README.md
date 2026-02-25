@@ -1,6 +1,6 @@
 # Grocy
 
-Grocy is a lightweight web application for **managing shared grocery lists within households**. The project is primarily a learning project focused on gaining hands-on experience with **Spring Boot**, while keeping the application simple, collaborative, and fast.
+Grocy is a lightweight web application for **managing shared grocery lists within households**. The project is primarily a learning project focused on gaining hands-on experience with **Spring Boot** and DevOps practices, while keeping the application simple, collaborative, and fast.
 
 ## Features
 
@@ -31,8 +31,7 @@ Grocy is a lightweight web application for **managing shared grocery lists withi
 
 ### Infrastructure
 
-* PostgreSQL (e.g. Neon)
-* Hosting via Koyeb
+* PostgreSQL
 * Environment-based configuration
 
 ## Getting Started
