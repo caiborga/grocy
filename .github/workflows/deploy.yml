@@ -39,7 +39,4 @@ jobs:
                   username: ${{ secrets.VM_USER }}
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
                   script: |
-                      # Prozess beenden, wenn er läuft
-                      pgrep -f my-app.jar | xargs -r kill -9
-                      nohup java -jar /home/${{ secrets.VM_USER }}/app/my-app.jar > log.txt 2>&1 &
-                      sleep 2
+                    sudo systemctl restart grocy
