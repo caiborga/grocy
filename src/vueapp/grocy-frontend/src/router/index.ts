@@ -14,6 +14,7 @@ import Login from "@/pages/Login.vue";
 import List from "@/pages/List.vue";
 import HouseHolds from "@/pages/HouseHolds.vue";
 import JoinInvite from "@/pages/JoinInvite.vue";
+import NotFound from "@/pages/NotFound.vue";
 
 type AppRouteMeta = {
 	requiresAuth?: boolean;
@@ -49,11 +50,7 @@ const router = createRouter({
 			component: HouseHolds,
 			meta: { requiresAuth: true } satisfies AppRouteMeta
 		},
-		// {
-		// 	path: "/settings",
-		// 	component: Home,
-		// 	meta: { requiresAuth: true } satisfies AppRouteMeta
-		// }
+		{ path: "/:pathMatch(.*)*", component: NotFound }
 	]
 });
 
@@ -82,11 +79,10 @@ router.beforeEach(
 			await householdStore.loadActiveHousehold();
 			return true;
 		} catch (err: unknown) {
-			
 			const status = (err as any)?.response?.status as number | undefined;
 
 			if (status === 401 || status === 403) {
-				householdStore.clear?.();
+				householdStore.deleteActiveHousehold?.();
 				localStorage.removeItem(ACCESS_TOKEN_KEY);
 				localStorage.removeItem("user");
 				return { path: "/login", query: { redirect: to.fullPath } };

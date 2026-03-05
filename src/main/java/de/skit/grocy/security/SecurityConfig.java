@@ -30,21 +30,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // Frontend / static
-                        .requestMatchers(
-                                "/", "/index.html",
-                                "/assets/**", "/favicon.ico",
-                                "/*.js", "/*.css", "/*.svg", "/*.png", "/*.woff2", "/join")
-                        .permitAll()
-
-                        // Public API
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/users")
-                        .permitAll()
-
-                        // Everything else requires JWT
-                        .anyRequest().authenticated())
+                        .requestMatchers("/api/auth/**", "/api/users").permitAll()
+                        .requestMatchers("/api/**").authenticated()
+                        .anyRequest().permitAll())
                 .formLogin(AbstractHttpConfigurer::disable)
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
