@@ -18,7 +18,9 @@ jobs:
                   distribution: "temurin"
 
             - name: Build with Maven
-              run: ./mvnw clean package -DskipTests
+              run: | 
+                  chmod +x mvnw
+                  ./mvnw clean package -DskipTests
 
             - name: Copy JAR to VM
               uses: appleboy/scp-action@v0.1.7
