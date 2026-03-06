@@ -39,7 +39,7 @@ jobs:
             docker stop grocy || true
             docker rm grocy || true
             docker run -d --name grocy \
-              --network grocy_default \
+              --network grocy-network \
               --restart unless-stopped \
               -e SPRING_DATASOURCE_URL=${{ secrets.DB_URL }} \
               -e SPRING_DATASOURCE_USERNAME=${{ secrets.DB_USER }} \
