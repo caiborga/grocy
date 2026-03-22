@@ -5,7 +5,7 @@
             <div class="mb-6 text-center">
                 <h1 class="text-2xl font-bold mb-1">Login</h1>
                 <p class="text-sm text-text-secondary-light dark:text-text-secondary-dark">
-                    Willkommen zurück bei grocy
+                    Willkommen zurück bei Grocy!
                 </p>
             </div>
 
