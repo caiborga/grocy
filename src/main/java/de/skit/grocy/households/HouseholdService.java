@@ -14,7 +14,6 @@ import de.skit.grocy.households.dto.HouseholdUpdate;
 import de.skit.grocy.households.mapper.HouseholdMapper;
 import de.skit.grocy.households.member.HouseholdMemberEntity;
 import de.skit.grocy.households.member.HouseholdMemberRepository;
-import de.skit.grocy.households.member.dto.HouseholdMemberResponse;
 import de.skit.grocy.households.member.mapper.HouseholdMemberMapper;
 import de.skit.grocy.items.ItemRepository;
 import de.skit.grocy.lists.ListEntity;
@@ -24,8 +23,6 @@ import de.skit.grocy.lists.mapper.ListMapper;
 import de.skit.grocy.security.UserPrincipal;
 import de.skit.grocy.user.UserEntity;
 import de.skit.grocy.user.UserRepository;
-import de.skit.grocy.user.dto.UserResponse;
-import de.skit.grocy.user.mapper.UserMapper;
 import jakarta.transaction.Transactional;
 
 @Service
