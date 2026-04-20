@@ -4,9 +4,7 @@
         <header v-if="showNav" class="sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-gray-100">
             <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
                 <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
-                    <span class="font-bold text-gray-900">
-                        Grocy
-                    </span>
+                    <img class="h-6 w-46 object-cover" src="/public/grocy.png" />
 
                     <span class="text-gray-400 select-none">/</span>
 

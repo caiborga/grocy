@@ -159,7 +159,7 @@
                                 <button
                                     class="text-sm px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 whitespace-nowrap"
                                     @click="showDone = !showDone">
-                                    {{ showDone ? "Erledigte verbergen" : "Erledigte anzeigen" }}
+                                    {{ showDone ? "Verbergen" : "Anzeigen" }}
                                     ({{ doneItems.length }})
                                 </button>
 
