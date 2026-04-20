@@ -21,8 +21,8 @@
                     <!-- Right actions -->
                     <div class="flex items-center gap-2 justify-end">
                         <!-- Rename -->
-                        <el-button v-if="list && can(PERM.LIST_EDIT)" circle size="default" plain @click="openRenameListModal()"
-                            title="Liste umbenennen">
+                        <el-button v-if="list && can(PERM.LIST_EDIT)" circle size="default" plain
+                            @click="openRenameListModal()" title="Liste umbenennen">
                             <el-icon>
                                 <Edit />
                             </el-icon>
@@ -150,20 +150,25 @@
 
                     <!-- Done items -->
                     <div v-if="doneItems.length" class="mt-6">
-                        <div class="flex items-center justify-between mb-2">
+                        <div class="flex items-center justify-between gap-3 mb-3">
                             <h2 class="text-sm font-semibold text-gray-600">
                                 Erledigt
                             </h2>
-                            <button class="text-sm px-3 py-1.5 rounded-xl bg-gray-100 hover:bg-gray-200"
-                                @click="showDone = !showDone">
-                                {{ showDone ? "Verbergen" : "Anzeigen" }}
-                                ({{ doneItems.length }})
-                            </button>
-                            <button v-if="doneCount > 0"
-                                class="text-sm px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700"
-                                @click="clearDone">
-                                Erledigte löschen ({{ doneCount }})
-                            </button>
+
+                            <div class="flex items-center gap-2">
+                                <button
+                                    class="text-sm px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 whitespace-nowrap"
+                                    @click="showDone = !showDone">
+                                    {{ showDone ? "Erledigte verbergen" : "Erledigte anzeigen" }}
+                                    ({{ doneItems.length }})
+                                </button>
+
+                                <button v-if="doneCount > 0"
+                                    class="text-sm px-3 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap"
+                                    @click="clearDone">
+                                    Löschen ({{ doneCount }})
+                                </button>
+                            </div>
                         </div>
 
                         <ul v-if="showDone" class="divide-y opacity-80">

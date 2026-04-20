@@ -14,9 +14,9 @@
                 <!-- Left: Households list -->
                 <div class="md:col-span-1">
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                        <div class="p-3 border-b border-gray-100 flex items-center justify-between">
-                            <span class="font-semibold">Deine Haushalte</span>
-                            <el-tag size="small" type="info">{{
+                        <div class="p-4 border-b border-gray-100 flex items-center justify-between gap-3">
+                            <span class="text-xl font-bold">Deine Haushalte</span>
+                            <el-tag size="large" type="success" class="px-5">{{
                                 activeHouseholds.length
                             }}</el-tag>
                         </div>
@@ -58,8 +58,8 @@
                             </div>
 
                             <div class="flex">
-                                <el-button v-if="can(PERM.HOUSEHOLD_RENAME)"
-                                    type="primary" plain @click="openRename = true">
+                                <el-button v-if="can(PERM.HOUSEHOLD_RENAME)" type="primary" plain
+                                    @click="openRename = true">
                                     <el-icon>
                                         <Edit />
                                     </el-icon>
@@ -165,8 +165,8 @@
                                                 </div>
                                             </div>
 
-                                            <div  v-if="can(PERM.LIST_CREATE)" @click="openCreateList = true"
-                                                class="border border-gray-100 rounded-2xl p-4 hover:bg-gray-50 cursor-pointer">
+                                            <div v-if="can(PERM.LIST_CREATE)" @click="openCreateList = true"
+                                                class="border border-gray-100 rounded-2xl p-4 hover:bg-gray-50 cursor-pointer bg-blue-50">
                                                 <div class="flex items-center justify-center h-full">
                                                     <el-icon>
                                                         <Plus />
@@ -223,10 +223,10 @@
                                             </template>
                                         </el-table-column>
 
-                                        
+
 
                                         <el-table-column prop="role" label="Rolle" width="140">
-                                            
+
                                             <template #default="{ row }">
                                                 <el-select v-model="row.role" size="small"
                                                     :disabled="!can(PERM.MEMBER_INVITE) || userIsOwner(row.role)"
@@ -242,7 +242,8 @@
                                             </template>
                                         </el-table-column>
 
-                                        <el-table-column  v-if="can(PERM.MEMBER_DELETE)" label="" width="120" align="right">
+                                        <el-table-column v-if="can(PERM.MEMBER_DELETE)" label="" width="120"
+                                            align="right">
                                             <template #default="{ row }">
                                                 <el-button type="danger" plain size="small"
                                                     :disabled="!can(PERM.MEMBER_DELETE) || userIsOwner(row.role)"
@@ -269,7 +270,8 @@
 
                 <template #footer>
                     <el-button @click="openCreate = false">Abbrechen</el-button>
-                    <el-button type="primary" :loading="createLoading" @click="createHousehold">
+                    <el-button type="primary" :loading="createLoading" @click="createHousehold"
+                        :disabled="isValueValid(createName)">
                         Erstellen
                     </el-button>
                 </template>
@@ -284,7 +286,8 @@
 
                 <template #footer>
                     <el-button @click="openRename = false">Abbrechen</el-button>
-                    <el-button type="primary" :loading="renameLoading" @click="renameHousehold">
+                    <el-button type="primary" :loading="renameLoading" @click="renameHousehold"
+                        :disabled="isValueValid(renameName)">
                         Speichern
                     </el-button>
                 </template>
@@ -339,7 +342,8 @@
                     <el-button @click="openCreateList = false">
                         Abbrechen
                     </el-button>
-                    <el-button type="primary" :loading="createListLoading" @click="createList">
+                    <el-button type="primary" :loading="createListLoading" @click="createList"
+                        :disabled="isValueValid(createListName)">
                         Erstellen
                     </el-button>
                 </template>
@@ -355,7 +359,8 @@
 
                 <template #footer>
                     <el-button @click="openEditListDialog = false">Abbrechen</el-button>
-                    <el-button type="primary" :loading="editListLoading" @click="saveListEdit">
+                    <el-button type="primary" :loading="editListLoading" @click="saveListEdit"
+                        :disabled="isValueValid(editListTitle)">
                         Speichern
                     </el-button>
                 </template>
@@ -443,7 +448,7 @@ onMounted(async () => {
     await getHouseholds();
     let active = householdStore.activeHousehold;
 
-    if(!active && activeHouseholds.value.length > 0) {
+    if (!active && activeHouseholds.value.length > 0) {
         active = activeHouseholds.value[0];
         await selectHousehold(active);
         return;
@@ -467,6 +472,10 @@ function toggleLoading() {
         loadingInstance?.close();
         loadingInstance = null;
     }
+}
+
+function isValueValid(value) {
+    return !value || value.trim().length === 0
 }
 
 // HOUSEHOLD
@@ -650,7 +659,7 @@ async function updateRole(row, newRole) {
     if (!selected.value?.id || !row?.id) return;
 
     const old = row.role;
-    row.role = newRole; 
+    row.role = newRole;
 
     try {
         await householdMemberService.updateRole(selected.value.id, row.userId, {
@@ -703,7 +712,7 @@ async function createInviteLink() {
     }
     inviteLoading.value = true;
     try {
-        const res = await inviteService.create(householdId, {role: inviteRole.value})
+        const res = await inviteService.create(householdId, { role: inviteRole.value })
         inviteUrl.value = res.data.url;
         inviteExpiresAt.value = formatExpires(res.data.expiresAt);
 
@@ -803,4 +812,8 @@ async function confirmDeleteList(l) {
         ElMessage.error("Löschen fehlgeschlagen");
     }
 }
+
+
+
+
 </script>

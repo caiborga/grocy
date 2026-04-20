@@ -10,7 +10,7 @@
             </div>
 
             <!-- Login Form -->
-            <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large">
+            <el-form ref="formRef" :model="form" :rules="rules" label-position="top" size="large" @submit.prevent="submit">
                 <el-form-item label="Email" prop="email">
                     <el-input v-model="form.email" placeholder="you@example.com" autocomplete="email" />
                 </el-form-item>
@@ -20,7 +20,7 @@
                 </el-form-item>
 
                 <!-- Submit -->
-                <el-button type="primary" class="w-full mt-2" :loading="loading" @click="submit">
+                <el-button type="primary" class="w-full mt-2" :loading="loading" @click="submit" native-type="submit">
                     Login
                 </el-button>
             </el-form>
