@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.data.domain.Sort;
 
 import de.skit.grocy.lists.ListEntity;
 
@@ -13,9 +14,9 @@ import java.util.UUID;
 
 public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
 
-    List<ItemEntity> findByList(ListEntity list);
+    List<ItemEntity> findByList(ListEntity list, Sort sort);
 
-    List<ItemEntity> findByListAndChecked(ListEntity list, boolean checked);
+    List<ItemEntity> findByListAndChecked(ListEntity list, boolean checked, Sort sort);
 
     Optional<ItemEntity> findByIdAndList(UUID id, ListEntity list);
 

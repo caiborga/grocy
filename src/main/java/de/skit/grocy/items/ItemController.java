@@ -25,9 +25,10 @@ public class ItemController {
     public List<ListItem> getItems(
             @PathVariable UUID listId,
             @RequestParam(required = false) String filter,
+            @RequestParam(required = false) String sort,
             @AuthenticationPrincipal UserPrincipal principal) {
 
-        return service.getItems(listId, filter, principal);
+        return service.getItems(listId, filter, sort, principal);
     }
 
     @PostMapping

@@ -90,6 +90,17 @@
                     </button>
                 </div>
 
+                <!-- Filters -->
+                <div class="flex flex-col sm:flex-row gap-2 mb-4">
+                    <select v-model="selectedSort"
+                        class="border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
+                        <option value="created_desc">Neueste zuerst</option>
+                        <option value="created_asc">Älteste zuerst</option>
+                        <option value="title_asc">A–Z</option>
+                        <option value="title_desc">Z–A</option>
+                    </select>
+                </div>
+
                 <!-- Empty state -->
                 <div v-if="items.length === 0" class="text-center text-gray-500 py-10">
                     <div class="text-lg font-semibold mb-1">
@@ -225,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRoute } from "vue-router";
 import { listService } from "@/services/listService";
 import { ElLoading, ElMessage, ElMessageBox } from "element-plus";
@@ -271,8 +282,21 @@ const progressPercent = computed(() => {
     return Math.round((checked / total) * 100);
 });
 
+const selectedFilter = ref("all");
+const selectedSort = ref("created_desc");
+
+const filterOptions = [
+    { label: "Alle", value: "all" },
+    { label: "Offen", value: "open" },
+    { label: "Erledigt", value: "checked" },
+];
+
 onMounted(async () => {
     await getList();
+});
+
+watch([selectedFilter, selectedSort], () => {
+    getList();
 });
 
 // ASYNCS
@@ -297,7 +321,9 @@ async function getList() {
 async function loadItems() {
     const listId = list.value?.id;
     if (!listId) return;
-    const res = await listService.getItems(listId);
+    const filter = selectedFilter.value
+    const sort = selectedSort.value;
+    const res = await listService.getItems(listId, filter, sort);
     items.value = res.data;
 }
 

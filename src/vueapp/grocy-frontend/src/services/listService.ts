@@ -5,8 +5,13 @@ export const listService = {
 		return api.get(`/lists/${id}`);
 	},
 
-	getItems(listId: string) {
-		return api.get(`/lists/${listId}/items`);
+	getItems(listId: string, filter: string, sort: string) {
+		return api.get(`/lists/${listId}/items`, {
+         params: {
+            filter: filter,
+            sort: sort,
+        },
+    });
 	},
 
 	addItem(listId: string, title: string) {

@@ -7,6 +7,7 @@ import de.skit.grocy.households.member.HouseholdMemberRepository;
 import de.skit.grocy.items.dto.ItemCreate;
 import de.skit.grocy.items.dto.ItemPatch;
 import de.skit.grocy.items.dto.ListItem;
+import de.skit.grocy.lists.ItemSort;
 import de.skit.grocy.lists.ListEntity;
 import de.skit.grocy.lists.ListRepository;
 import de.skit.grocy.security.UserPrincipal;
@@ -15,6 +16,8 @@ import jakarta.transaction.Transactional;
 
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Sort;
+
 
 import java.util.List;
 import java.util.Optional;
@@ -66,6 +69,7 @@ public class ItemService {
     public List<ListItem> getItems(
             UUID listId,
             String filter,
+            String sort,
             UserPrincipal principal) {
 
         ListEntity list = listRepository.findById(listId)
@@ -75,12 +79,14 @@ public class ItemService {
                 principal.getUser(),
                 list.getHousehold());
 
-        String normalized = (filter == null) ? "all" : filter.toLowerCase();
+        String normalizedFilter = (filter == null) ? "all" : filter.toLowerCase();
 
-        List<ItemEntity> entities = switch (normalized) {
-            case "all" -> repository.findByList(list);
-            case "open" -> repository.findByListAndChecked(list, false);
-            case "checked" -> repository.findByListAndChecked(list, true);
+        Sort springSort = ItemSort.fromString(sort).toSort();
+
+        List<ItemEntity> entities = switch (normalizedFilter) {
+            case "all" -> repository.findByList(list, springSort);
+            case "open" -> repository.findByListAndChecked(list, false, springSort);
+            case "checked" -> repository.findByListAndChecked(list, true, springSort);
             default -> throw new IllegalArgumentException("Invalid filter: " + filter);
         };
 
