@@ -5,12 +5,15 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.domain.Sort;
+import org.springframework.transaction.annotation.Transactional;
 
 import de.skit.grocy.lists.ListEntity;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+
+import java.time.OffsetDateTime;
 
 public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
 
@@ -29,4 +32,15 @@ public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
     long countByList(ListEntity list);
 
     long countByListAndChecked(ListEntity list, boolean checked);
+
+    @Modifying
+    @Transactional
+    @Query("""
+        delete from ItemEntity i
+        where i.checked = true
+          and i.checkedAt < :cutoff
+    """)
+    int deleteCheckedItemsOlderThan(
+        @Param("cutoff") OffsetDateTime cutoff
+    );
 }

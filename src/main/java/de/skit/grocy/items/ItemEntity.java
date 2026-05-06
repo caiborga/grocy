@@ -44,6 +44,7 @@ public class ItemEntity {
 
     private OffsetDateTime createdAt;
     private OffsetDateTime updatedAt;
+    private OffsetDateTime checkedAt;
 
     @PrePersist
     void onCreate() {
@@ -113,21 +114,25 @@ public class ItemEntity {
         return updatedAt;
     }
 
+    public OffsetDateTime getCheckedAt() {
+        return checkedAt;
+    }
+
     // ---------- Setter ----------
 
     public void setTitle(String title) {
         this.title = title;
     }
 
-    public void setList(ListEntity list){
+    public void setList(ListEntity list) {
         this.list = list;
     }
 
-    public void setHousehold(HouseholdEntity household){
+    public void setHousehold(HouseholdEntity household) {
         this.household = household;
     }
 
-    public void setCreatedBy(UserEntity createdBy){
+    public void setCreatedBy(UserEntity createdBy) {
         this.createdBy = createdBy;
     }
 
@@ -157,6 +162,11 @@ public class ItemEntity {
 
     public void setChecked(boolean checked) {
         this.checked = checked;
+        if (checked) {
+            this.checkedAt = OffsetDateTime.now();
+        } else {
+            this.checkedAt = null;
+        }
     }
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
