@@ -20,31 +20,23 @@
                     </div>
 
                     <!-- Right actions -->
-                    <div class="flex items-center gap-2 justify-end">
+                    <div class="flex items-center justify-end">
                         <!-- Rename -->
-                        <el-button v-if="list && can(PERM.LIST_EDIT)" circle size="default" plain
-                            @click="openRenameListModal()" title="Liste umbenennen">
-                            <el-icon>
+                        <el-button v-if="list && can(PERM.LIST_EDIT)" circle plain @click="openRenameListModal()"
+                            title="Liste umbenennen">
+                            <el-icon :size="18">
                                 <Edit />
                             </el-icon>
                         </el-button>
 
                         <!-- Default -->
-                        <button v-if="list" @click="toggleDefault(list)" :disabled="list.isDefault" :title="list.isDefault
-                            ? 'Default-Liste'
-                            : 'Als Default setzen'
-                            " class="p-2 rounded-full hover:bg-gray-100 transition-colors disabled:cursor-not-allowed">
-                            <span v-if="list.isDefault" class="text-yellow-500 text-xl leading-none">
-                                <el-icon>
-                                    <StarFilled />
-                                </el-icon>
-                            </span>
-                            <span v-else class="text-gray-400 hover:text-blue-500 text-xl leading-none">
-                                <el-icon>
-                                    <Star />
-                                </el-icon>
-                            </span>
-                        </button>
+                        <el-button v-if="list" circle plain class="!ml-1" :disabled="list.isDefault" @click="toggleDefault(list)"
+                            :title="list.isDefault ? 'Default-Liste' : 'Als Default setzen'">
+                            <el-icon :size="18" :class="list.isDefault ? 'text-yellow-500' : 'text-gray-400'">
+                                <StarFilled v-if="list.isDefault" />
+                                <Star v-else />
+                            </el-icon>
+                        </el-button>
                     </div>
                 </div>
 
@@ -126,9 +118,11 @@
                                     <button class="text-action inline-flex items-center gap-1">
                                         {{ selectedSortLabel }}
 
-                                        <el-icon :size="14">
-                                            <Sort />
-                                        </el-icon>
+                                        <el-button circle size="default" plain title="Sortieren">
+                                            <el-icon>
+                                                <Sort />
+                                            </el-icon>
+                                        </el-button>
                                     </button>
 
                                     <template #dropdown>
@@ -201,10 +195,12 @@
                                     ({{ doneItems.length }})
                                 </button>
 
-                                <button v-if="doneCount > 0" class="danger-text-action" @click="clearDone">
-                                    <el-icon :size="14">
-                                        <Delete />
-                                    </el-icon>
+                                <button v-if="doneCount > 0" @click="clearDone">
+                                    <el-button circle size="default" plain title="Löschen">
+                                        <el-icon :size="14" class="text-red-500">
+                                            <Delete />
+                                        </el-icon>
+                                    </el-button>
                                 </button>
                             </div>
                         </div>
@@ -220,31 +216,33 @@
                                     </span>
                                 </div>
 
-                                <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <button class="icon-action" @click="openRenameItemModal(item)" title="Bearbeiten">
-                                        <el-icon :size="16">
-                                            <Edit />
+                                <el-dropdown trigger="click">
+                                    <button class="icon-action">
+                                        <el-icon>
+                                            <MoreFilled />
                                         </el-icon>
                                     </button>
 
-                                    <button class="icon-action-danger" @click="removeItem(item)" title="Löschen">
-                                        <el-icon :size="16">
-                                            <Delete />
-                                        </el-icon>
-                                    </button>
-                                </div>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item @click="openRenameItemModal(item)">
+                                                Umbenennen
+                                            </el-dropdown-item>
+
+                                            <el-dropdown-item class="text-red-500" @click="removeItem(item)">
+                                                Löschen
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
                             </li>
                         </ul>
                     </section>
-
-                    <!-- Error hint -->
-                    <div v-if="error" class="mt-4 text-sm text-red-600">
-                        {{ error }}
-                    </div>
                 </div>
 
                 <!-- Rename list dialog -->
-                <el-dialog v-model="openRenameList" title="Liste umbenennen" width="92%" class="max-w-[420px]" align-center>
+                <el-dialog v-model="openRenameList" title="Liste umbenennen" width="92%" class="max-w-[420px]"
+                    align-center>
                     <el-form label-position="top">
                         <el-form-item label="Neuer Name">
                             <el-input v-model="renameListTitle" placeholder="z. B. Wocheneinkauf"
@@ -264,7 +262,8 @@
                 </el-dialog>
 
                 <!-- Rename item dialog -->
-                <el-dialog v-model="openRenameItem" title="Element umbenennen" width="92%" class="max-w-[420px]" align-center>
+                <el-dialog v-model="openRenameItem" title="Element umbenennen" width="92%" class="max-w-[420px]"
+                    align-center>
                     <el-form label-position="top">
                         <el-form-item label="Bezeichnung">
                             <el-input v-model="renameItemTitle" @keyup.enter="saveRenameItem" />
@@ -298,10 +297,6 @@
 .text-action {
     @apply text-sm text-gray-500 hover:text-gray-900 transition-colors;
 }
-
-.danger-text-action {
-    @apply text-sm text-red-500 hover:text-red-700 transition-colors;
-}
 </style>
 
 <script setup>
@@ -323,7 +318,6 @@ const item = ref(null);
 const items = ref([]);
 const newItem = ref("");
 const adding = ref(false);
-const error = ref("");
 const showDone = ref(false);
 
 const openRenameList = ref(false);
@@ -374,14 +368,13 @@ async function getList() {
     const raw = route.params.id;
     const id = raw ? raw : "default";
     toggleLoading();
-    error.value = "";
     try {
         const res = await listService.getList(id);
         list.value = res.data;
         await loadItems();
     } catch (e) {
         console.error(e);
-        error.value = "Liste konnte nicht geladen werden.";
+        ElMessage.error("Liste konnte nicht geladen werden.");
     } finally {
         toggleLoading();
     }
@@ -402,7 +395,6 @@ async function addItem() {
     if (!title) return;
 
     adding.value = true;
-    error.value = "";
 
     try {
         const response = await listService.addItem(list.value.id, title);
@@ -500,8 +492,6 @@ async function clearDone() {
 
 async function toggle(item) {
     if (!list.value?.id) return;
-    error.value = "";
-
     recomputeStatsFromItems();
 
     try {
@@ -513,7 +503,7 @@ async function toggle(item) {
         // rollback
         item.checked = !item.checked;
         recomputeStatsFromItems();
-        error.value = "Konnte Status nicht speichern.";
+        ElMessage.error("Konnte Status nicht speichern.");
     }
 }
 
