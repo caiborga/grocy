@@ -4,13 +4,14 @@
             <!-- Header -->
             <header class="bg-white rounded-2xl shadow-sm p-4 mb-4">
                 <div class="grid grid-cols-[1fr_auto] items-center gap-3">
-                    <!-- Titel + Subline -->
                     <div>
                         <h1 class="text-2xl font-bold leading-tight">
                             {{ list?.title ?? "Einkaufsliste" }}
                         </h1>
+
                         <p class="text-sm text-gray-500 mt-1" v-if="list">
                             {{ list.isDefault ? "Default-Liste" : "Liste" }}
+
                             <span v-if="list.archived"
                                 class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100">
                                 Archiviert
@@ -50,8 +51,11 @@
                 <!-- Stats -->
                 <div v-if="list" class="mt-4">
                     <div class="flex items-center justify-between text-sm text-gray-600 mb-2">
-                        <span>{{ list.stats.checked }} /
-                            {{ list.stats.total }} erledigt</span>
+                        <span>
+                            {{ list.stats.checked }} /
+                            {{ list.stats.total }} erledigt
+                        </span>
+
                         <span v-if="list.stats.total > 0">
                             {{ progressPercent }}%
                         </span>
@@ -68,6 +72,7 @@
                                 {{ openCount }}
                             </div>
                         </div>
+
                         <div class="flex-1 bg-gray-50 rounded-xl p-3">
                             <div class="text-xs text-gray-500">Erledigt</div>
                             <div class="text-lg font-semibold">
@@ -83,22 +88,13 @@
                 <!-- Add -->
                 <div v-if="can(PERM.LIST_EDIT)" class="flex gap-2 mb-4">
                     <input v-model="newItem" @keyup.enter="addItem" placeholder="Neues Item hinzufügen…"
-                        class="border rounded-xl px-3 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                        class="border border-gray-200 rounded-xl px-3 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+
                     <button :disabled="!list || !newItem.trim() || adding"
-                        class="bg-blue-600 text-white px-4 rounded-xl text-lg disabled:opacity-50" @click="addItem">
+                        class="h-10 w-10 rounded-xl bg-blue-600 text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
+                        @click="addItem" title="Hinzufügen">
                         +
                     </button>
-                </div>
-
-                <!-- Filters -->
-                <div class="flex flex-col sm:flex-row gap-2 mb-4">
-                    <select v-model="selectedSort"
-                        class="border rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-200">
-                        <option value="created_desc">Neueste zuerst</option>
-                        <option value="created_asc">Älteste zuerst</option>
-                        <option value="title_asc">A–Z</option>
-                        <option value="title_desc">Z–A</option>
-                    </select>
                 </div>
 
                 <!-- Empty state -->
@@ -106,101 +102,149 @@
                     <div class="text-lg font-semibold mb-1">
                         Noch keine Items
                     </div>
-                    <div v-if="can(PERM.LIST_EDIT)" class="text-sm">Füge oben dein erstes Item hinzu.</div>
-                </div>
-                <!-- Open items -->
-                <div v-else>
-                    <h2 class="text-sm font-semibold text-gray-600 mb-2" v-if="openItems.length">
-                        Offen
-                    </h2>
-                    <ul class="divide-y" v-if="openItems.length">
-                        <li v-for="item in items.filter((i) => !i.checked)" :key="item.id"
-                            class="group flex items-center gap-3 py-2">
-                            <!-- Checkbox -->
-                            <input type="checkbox" class="h-4 w-4 accent-blue-600" v-model="item.checked"
-                                @change="toggle(item)" />
 
-                            <!-- Title / Edit -->
-                            <div class="flex-1 min-w-0">
-                                <!-- Anzeige -->
-                                <span v-if="editingId !== item.id" :class="[
-                                    'block truncate',
-                                    item.checked
-                                        ? 'line-through text-gray-400'
-                                        : 'text-gray-900'
-                                ]">
-                                    {{ item.title }}
+                    <div v-if="can(PERM.LIST_EDIT)" class="text-sm">
+                        Füge oben dein erstes Item hinzu.
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div v-else>
+                    <!-- Open items -->
+                    <section v-if="openItems.length">
+                        <div class="flex items-center justify-between gap-3 mb-3">
+                            <h2 class="text-sm font-semibold text-gray-600">
+                                Offen
+                            </h2>
+
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm text-gray-500">
+                                    Einträge ({{ items.length - doneItems.length }})
                                 </span>
 
-                                <!-- Edit -->
-                                <input v-else v-model="editTitle"
-                                    class="w-full border-b border-gray-300 focus:border-blue-500 outline-none text-sm py-0.5"
-                                    @keyup.enter="saveEdit(item)" @keyup.esc="cancelEdit" autofocus />
-                            </div>
+                                <el-dropdown trigger="click" @command="selectedSort = $event">
+                                    <button class="text-action inline-flex items-center gap-1">
+                                        {{ selectedSortLabel }}
 
-                            <!-- Actions -->
-                            <div class="flex items-center">
-                                <!-- Edit -->
-                                <el-button circle size="default" plain @click="openRenameItemModal(item)"
-                                    title="Bearbeiten">
-                                    <el-icon :size="18">
-                                        <Edit />
-                                    </el-icon>
-                                </el-button>
+                                        <el-icon :size="14">
+                                            <Sort />
+                                        </el-icon>
+                                    </button>
 
-                                <!-- Delete -->
-                                <el-button circle size="default" type="danger" plain @click="removeItem(item)"
-                                    title="Löschen">
-                                    <el-icon :size="18">
-                                        <Delete />
-                                    </el-icon>
-                                </el-button>
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item command="created_desc">
+                                                Neueste zuerst
+                                            </el-dropdown-item>
+
+                                            <el-dropdown-item command="created_asc">
+                                                Älteste zuerst
+                                            </el-dropdown-item>
+
+                                            <el-dropdown-item command="title_asc">
+                                                A–Z
+                                            </el-dropdown-item>
+
+                                            <el-dropdown-item command="title_desc">
+                                                Z–A
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
                             </div>
-                        </li>
-                    </ul>
+                        </div>
+
+                        <ul class="divide-y divide-gray-100">
+                            <li v-for="item in openItems" :key="item.id" class="group flex items-center gap-3 py-2">
+                                <input type="checkbox" class="h-4 w-4 accent-blue-600" v-model="item.checked"
+                                    @change="toggle(item)" />
+
+                                <div class="flex-1 min-w-0">
+                                    <span class="block truncate text-gray-900">
+                                        {{ item.title }}
+                                    </span>
+                                </div>
+
+                                <el-dropdown trigger="click">
+                                    <button class="icon-action">
+                                        <el-icon>
+                                            <MoreFilled />
+                                        </el-icon>
+                                    </button>
+
+                                    <template #dropdown>
+                                        <el-dropdown-menu>
+                                            <el-dropdown-item @click="openRenameItemModal(item)">
+                                                Umbenennen
+                                            </el-dropdown-item>
+
+                                            <el-dropdown-item class="text-red-500" @click="removeItem(item)">
+                                                Löschen
+                                            </el-dropdown-item>
+                                        </el-dropdown-menu>
+                                    </template>
+                                </el-dropdown>
+                            </li>
+                        </ul>
+                    </section>
 
                     <!-- Done items -->
-                    <div v-if="doneItems.length" class="mt-6">
+                    <section v-if="doneItems.length" class="mt-6">
                         <div class="flex items-center justify-between gap-3 mb-3">
                             <h2 class="text-sm font-semibold text-gray-600">
                                 Erledigt
                             </h2>
 
-                            <div class="flex items-center gap-2">
-                                <button
-                                    class="text-sm px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 whitespace-nowrap"
-                                    @click="showDone = !showDone">
+                            <div class="flex items-center gap-3">
+                                <button class="text-action" @click="showDone = !showDone">
                                     {{ showDone ? "Verbergen" : "Anzeigen" }}
                                     ({{ doneItems.length }})
                                 </button>
 
-                                <button v-if="doneCount > 0"
-                                    class="text-sm px-3 py-2 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 whitespace-nowrap"
-                                    @click="clearDone">
-                                    Löschen ({{ doneCount }})
+                                <button v-if="doneCount > 0" class="danger-text-action" @click="clearDone">
+                                    <el-icon :size="14">
+                                        <Delete />
+                                    </el-icon>
                                 </button>
                             </div>
                         </div>
 
-                        <ul v-if="showDone" class="divide-y opacity-80">
-                            <li v-for="item in doneItems" :key="item.id" class="flex items-center gap-3 py-3">
-                                <input type="checkbox" class="h-5 w-5" v-model="item.checked" @change="toggle(item)" />
-                                <div class="flex-1">
-                                    <div class="font-medium line-through text-gray-500">
+                        <ul v-if="showDone" class="divide-y divide-gray-100 opacity-80">
+                            <li v-for="item in doneItems" :key="item.id" class="group flex items-center gap-3 py-2">
+                                <input type="checkbox" class="h-4 w-4 accent-blue-600" v-model="item.checked"
+                                    @change="toggle(item)" />
+
+                                <div class="flex-1 min-w-0">
+                                    <span class="block truncate line-through text-gray-500">
                                         {{ item.title }}
-                                    </div>
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button class="icon-action" @click="openRenameItemModal(item)" title="Bearbeiten">
+                                        <el-icon :size="16">
+                                            <Edit />
+                                        </el-icon>
+                                    </button>
+
+                                    <button class="icon-action-danger" @click="removeItem(item)" title="Löschen">
+                                        <el-icon :size="16">
+                                            <Delete />
+                                        </el-icon>
+                                    </button>
                                 </div>
                             </li>
                         </ul>
-                    </div>
+                    </section>
 
                     <!-- Error hint -->
                     <div v-if="error" class="mt-4 text-sm text-red-600">
                         {{ error }}
                     </div>
                 </div>
+
                 <!-- Rename list dialog -->
-                <el-dialog v-model="openRenameList" title="Liste umbenennen" width="420px">
+                <el-dialog v-model="openRenameList" title="Liste umbenennen" width="92%" class="max-w-[420px]" align-center>
                     <el-form label-position="top">
                         <el-form-item label="Neuer Name">
                             <el-input v-model="renameListTitle" placeholder="z. B. Wocheneinkauf"
@@ -209,14 +253,18 @@
                     </el-form>
 
                     <template #footer>
-                        <el-button @click="openRenameList = false">Abbrechen</el-button>
+                        <el-button @click="openRenameList = false">
+                            Abbrechen
+                        </el-button>
+
                         <el-button type="primary" :loading="renameLoading" @click="saveRenameList">
                             Speichern
                         </el-button>
                     </template>
                 </el-dialog>
+
                 <!-- Rename item dialog -->
-                <el-dialog v-model="openRenameItem" title="Element umbenennen" width="420px">
+                <el-dialog v-model="openRenameItem" title="Element umbenennen" width="92%" class="max-w-[420px]" align-center>
                     <el-form label-position="top">
                         <el-form-item label="Bezeichnung">
                             <el-input v-model="renameItemTitle" @keyup.enter="saveRenameItem" />
@@ -224,7 +272,10 @@
                     </el-form>
 
                     <template #footer>
-                        <el-button @click="openRenameItem = false">Abbrechen</el-button>
+                        <el-button @click="openRenameItem = false">
+                            Abbrechen
+                        </el-button>
+
                         <el-button type="primary" :loading="renameLoading" @click="saveRenameItem">
                             Speichern
                         </el-button>
@@ -234,6 +285,24 @@
         </div>
     </div>
 </template>
+
+<style scoped>
+.icon-action {
+    @apply h-8 w-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors;
+}
+
+.icon-action-danger {
+    @apply h-8 w-8 inline-flex items-center justify-center rounded-full text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors;
+}
+
+.text-action {
+    @apply text-sm text-gray-500 hover:text-gray-900 transition-colors;
+}
+
+.danger-text-action {
+    @apply text-sm text-red-500 hover:text-red-700 transition-colors;
+}
+</style>
 
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
