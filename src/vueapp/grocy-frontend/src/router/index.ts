@@ -14,14 +14,21 @@ import Login from "@/pages/Login.vue";
 import List from "@/pages/List.vue";
 import HouseHolds from "@/pages/HouseHolds.vue";
 import JoinInvite from "@/pages/JoinInvite.vue";
+import Impressum from "@/pages/Impressum.vue";
+import DataPrivacy from "@/pages/DataPrivacy.vue";
 import NotFound from "@/pages/NotFound.vue";
 
 type AppRouteMeta = {
 	requiresAuth?: boolean;
+	publicOnly?: boolean;
+	legalPage?: boolean;
 };
 
 const router = createRouter({
 	history: createWebHistory(),
+    scrollBehavior() {
+        return { top: 0 };
+    },
 	routes: [
 		{
 			path: "/",
@@ -30,11 +37,13 @@ const router = createRouter({
 		},
 		{
 			path: "/login",
-			component: Login
+			component: Login,
+			meta: { publicOnly: true } satisfies AppRouteMeta
 		},
 		{
 			path: "/register",
-			component: Register
+			component: Register,
+			meta: { publicOnly: true } satisfies AppRouteMeta
 		},
 		{
 			path: "/join",
@@ -50,29 +59,57 @@ const router = createRouter({
 			component: HouseHolds,
 			meta: { requiresAuth: true } satisfies AppRouteMeta
 		},
-		{ path: "/:pathMatch(.*)*", component: NotFound }
+		{
+			path: "/impressum",
+			component: Impressum,
+			meta: { legalPage: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/dataprivacy",
+			component: DataPrivacy,
+			meta: { legalPage: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/:pathMatch(.*)*",
+			component: NotFound
+		}
 	]
 });
 
 router.beforeEach(
 	async (to: RouteLocationNormalized): Promise<NavigationGuardReturn> => {
 		const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-		const requiresAuth = !!(to.meta as AppRouteMeta)?.requiresAuth;
+		const meta = to.meta as AppRouteMeta;
+		const requiresAuth = !!meta.requiresAuth;
 
-		// Public
+		const userStore = useUserStore();
+		const householdStore = useHouseholdStore();
+
 		if (!requiresAuth) {
-			if (to.path === "/login" && token) return "/lists/default";
+			if (meta.publicOnly && token) {
+				return "/lists/default";
+			}
+
+			if (meta.legalPage && token) {
+				try {
+					await userStore.loadMe();
+					await householdStore.loadActiveHousehold();
+				} catch {
+					householdStore.deleteActiveHousehold?.();
+					localStorage.removeItem(ACCESS_TOKEN_KEY);
+					localStorage.removeItem("user");
+				}
+			}
+
 			return true;
 		}
 
-		// Secure Route without Token -> Login
 		if (!token) {
-			return { path: "/login", query: { redirect: to.fullPath } };
+			return {
+				path: "/login",
+				query: { redirect: to.fullPath }
+			};
 		}
-
-		// Token available
-		const userStore = useUserStore();
-		const householdStore = useHouseholdStore();
 
 		try {
 			await userStore.loadMe();
@@ -85,7 +122,11 @@ router.beforeEach(
 				householdStore.deleteActiveHousehold?.();
 				localStorage.removeItem(ACCESS_TOKEN_KEY);
 				localStorage.removeItem("user");
-				return { path: "/login", query: { redirect: to.fullPath } };
+
+				return {
+					path: "/login",
+					query: { redirect: to.fullPath }
+				};
 			}
 
 			console.error("Guard preload failed:", err);
