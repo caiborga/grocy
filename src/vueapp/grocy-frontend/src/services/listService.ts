@@ -1,3 +1,4 @@
+import { Item } from "@/models/Item";
 import api from "@/services/api";
 
 export const listService = {
@@ -16,11 +17,7 @@ export const listService = {
 
 	addItem(
 		listId: string,
-		item: {
-			title: string;
-			quantity?: number | null;
-			unitText?: string | null;
-		}
+		item: Item
 	) {
 		return api.post(`/lists/${listId}/items`, item);
 	},
@@ -28,12 +25,7 @@ export const listService = {
 	patchItem(
 		listId: string,
 		itemId: string,
-		patch: {
-			checked?: boolean;
-			title?: string;
-			quantity?: number | null;
-			unitText?: string | null;
-		}
+		patch: Item,
 	) {
 		return api.patch(`/lists/${listId}/items/${itemId}`, patch);
 	},

@@ -5,6 +5,7 @@ import { Household } from "@/models/Household";
 import { List } from "@/models/List";
 import { userService } from "@/services/userService";
 import { Role } from "@/models/Role";
+import { useUserStore } from "./userStore";
 
 export const useHouseholdStore = defineStore("household", {
 	state: () => ({
@@ -32,14 +33,21 @@ export const useHouseholdStore = defineStore("household", {
 		},
 
 		async loadActiveHousehold() {
-			const householdId = this.activeHousehold?.householdId;
+			const userStore = useUserStore();
+			const householdId = userStore.me?.activeHouseholdId;
+
 			this.loading = true;
-			if (!householdId) {
-				return;
-			}
 			try {
+				if (!householdId) {
+					this.activeHousehold = null;
+					return;
+				}
+
 				const res = await householdService.getById(householdId);
+				this.activeHouseholdId = householdId;
 				this.activeHousehold = res.data;
+				this.householdMembers = res.data.members ?? [];
+				this.householdlists = res.data.lists ?? [];
 			} finally {
 				this.loading = false;
 			}
@@ -57,7 +65,8 @@ export const useHouseholdStore = defineStore("household", {
 		async createHousehold(name: string) {
 			const res = await householdService.create(name);
 			this.households.unshift(res.data);
-			await this.selectHousehold(res.data);
+
+			await this.selectHousehold(res.data.id);
 		},
 
 		async renameActiveHousehold(name: string) {
@@ -68,14 +77,19 @@ export const useHouseholdStore = defineStore("household", {
 
 		async deleteActiveHousehold() {
 			if (!this.activeHousehold) return;
-			await householdService.archive(
-				this.activeHousehold.id,
-				this.activeHousehold.name
-			);
+
+			const household = this.activeHousehold;
+
+			await householdService.archive(household.id, {
+				name: household.name,
+				archived: true
+			});
+
 			this.households = this.households.filter(
-				(h) => h.id !== this.activeHousehold.id
+				(h) => h.id !== household.id
 			);
 			this.activeHousehold = null;
+			this.activeHouseholdId = null;
 		},
 
 		async updateMemberRole(memberId: string, role: Role) {
@@ -89,11 +103,15 @@ export const useHouseholdStore = defineStore("household", {
 
 		async removeMember(memberId: string) {
 			if (!this.activeHousehold) return;
+
 			await householdMemberService.remove(
 				this.activeHousehold.id,
 				memberId
 			);
-			this.members = this.members.filter((m) => m.id !== memberId);
+
+			this.householdMembers = this.householdMembers.filter(
+				(m) => m.id !== memberId
+			);
 		}
 	}
 });
