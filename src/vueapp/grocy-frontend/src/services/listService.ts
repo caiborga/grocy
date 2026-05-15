@@ -7,28 +7,40 @@ export const listService = {
 
 	getItems(listId: string, filter: string, sort: string) {
 		return api.get(`/lists/${listId}/items`, {
-         params: {
-            filter: filter,
-            sort: sort,
-        },
-    });
+			params: {
+				filter: filter,
+				sort: sort
+			}
+		});
 	},
 
-	addItem(listId: string, title: string) {
-		return api.post(`/lists/${listId}/items`, { title });
+	addItem(
+		listId: string,
+		item: {
+			title: string;
+			quantity?: number | null;
+			unitText?: string | null;
+		}
+	) {
+		return api.post(`/lists/${listId}/items`, item);
 	},
 
 	patchItem(
 		listId: string,
 		itemId: string,
-		patch: { checked?: boolean; title?: string }
+		patch: {
+			checked?: boolean;
+			title?: string;
+			quantity?: number | null;
+			unitText?: string | null;
+		}
 	) {
 		return api.patch(`/lists/${listId}/items/${itemId}`, patch);
 	},
 
-    deleteList(listId: string){
-        return api.delete(`/lists/${listId}`);
-    },
+	deleteList(listId: string) {
+		return api.delete(`/lists/${listId}`);
+	},
 
 	deleteItem(listId: string, itemId: string) {
 		return api.delete(`/lists/${listId}/items/${itemId}`);

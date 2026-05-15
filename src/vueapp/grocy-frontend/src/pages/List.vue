@@ -30,7 +30,8 @@
                         </el-button>
 
                         <!-- Default -->
-                        <el-button v-if="list" circle plain class="!ml-1" :disabled="list.isDefault" @click="toggleDefault(list)"
+                        <el-button v-if="list" circle plain class="!ml-1" :disabled="list.isDefault"
+                            @click="toggleDefault(list)"
                             :title="list.isDefault ? 'Default-Liste' : 'Als Default setzen'">
                             <el-icon :size="18" :class="list.isDefault ? 'text-yellow-500' : 'text-gray-400'">
                                 <StarFilled v-if="list.isDefault" />
@@ -78,15 +79,38 @@
             <!-- Content -->
             <div class="bg-white rounded-2xl shadow-sm p-4">
                 <!-- Add -->
-                <div v-if="can(PERM.LIST_EDIT)" class="flex gap-2 mb-4">
-                    <input v-model="newItem" @keyup.enter="addItem" placeholder="Neues Item hinzufügen…"
-                        class="border border-gray-200 rounded-xl px-3 py-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                <div v-if="can(PERM.LIST_EDIT)" class="mb-4 space-y-2">
+                    <div class="flex gap-2">
 
-                    <button :disabled="!list || !newItem.trim() || adding"
-                        class="h-10 w-10 rounded-xl bg-blue-600 text-white text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
-                        @click="addItem" title="Hinzufügen">
-                        +
-                    </button>
+                        <el-input v-model="newItem" placeholder="Neues Item hinzufügen…" clearable size="large"
+                            class="!w-full" @keyup.enter="addItem" />
+
+                        <el-button circle plain size="large" title="Details" class="!m-0"
+                            @click="showAddDetails = !showAddDetails">
+                            <el-icon>
+                                <MoreFilled />
+                            </el-icon>
+                        </el-button>
+
+                        <el-button type="primary" circle size="large" class="!m-0"
+                            :disabled="!list || !newItem.trim() || adding || hasQuantityUnitMismatch(newQuantity, newUnitText)"
+                            :loading="adding" title="Hinzufügen" @click="addItem">
+                            <el-icon>
+                                <Plus />
+                            </el-icon>
+                        </el-button>
+                    </div>
+
+                    <transition name="details">
+                        <div v-if="showAddDetails" class="grid grid-cols-[1fr_1fr] gap-2">
+
+                            <el-input v-model="newQuantity" type="number" placeholder="Menge" clearable size="large"
+                                class="!w-full" />
+
+                            <el-autocomplete v-model="newUnitText" :fetch-suggestions="queryUnits" placeholder="Einheit"
+                                clearable size="large" class="!w-full" />
+                        </div>
+                    </transition>
                 </div>
 
                 <!-- Empty state -->
@@ -149,17 +173,37 @@
                         </div>
 
                         <ul class="divide-y divide-gray-100">
-                            <li v-for="item in openItems" :key="item.id" class="group flex items-center gap-3 py-2">
-                                <input type="checkbox" class="h-4 w-4 accent-blue-600" v-model="item.checked"
-                                    @change="toggle(item)" />
+                            <li v-for="item in openItems" :key="item.id"
+                                class="group grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_90px_auto] items-center gap-3 py-2">
+                                <!-- Checkbox -->
+                                <input type="checkbox" class="h-4 w-4 accent-blue-600 cursor-pointer"
+                                    v-model="item.checked" @change="toggle(item)" />
 
-                                <div class="flex-1 min-w-0">
+                                <!-- Title -->
+                                <div class="min-w-0">
                                     <span class="block truncate text-gray-900">
                                         {{ item.title }}
                                     </span>
+
+                                    <!-- Mobile quantity -->
+                                    <span v-if="item.quantity || item.unitText"
+                                        class="block sm:hidden text-xs text-gray-400 mt-0.5">
+                                        {{ formatQuantity(item.quantity) }}
+                                        {{ item.unitText }}
+                                    </span>
                                 </div>
 
-                                <el-dropdown trigger="click">
+                                <!-- Desktop quantity -->
+                                <div
+                                    class="hidden sm:block text-sm text-gray-500 text-right tabular-nums whitespace-nowrap">
+                                    <template v-if="item.quantity || item.unitText">
+                                        {{ formatQuantity(item.quantity) }}
+                                        {{ item.unitText }}
+                                    </template>
+                                </div>
+
+                                <!-- Actions -->
+                                <el-dropdown v-if="can(PERM.LIST_EDIT)" trigger="click">
                                     <button class="icon-action">
                                         <el-icon>
                                             <MoreFilled />
@@ -169,7 +213,7 @@
                                     <template #dropdown>
                                         <el-dropdown-menu>
                                             <el-dropdown-item @click="openRenameItemModal(item)">
-                                                Umbenennen
+                                                Bearbeiten
                                             </el-dropdown-item>
 
                                             <el-dropdown-item class="text-red-500" @click="removeItem(item)">
@@ -195,28 +239,47 @@
                                     ({{ doneItems.length }})
                                 </button>
 
-                                <button v-if="doneCount > 0" @click="clearDone">
-                                    <el-button circle size="default" plain title="Löschen">
-                                        <el-icon :size="14" class="text-red-500">
-                                            <Delete />
-                                        </el-icon>
-                                    </el-button>
-                                </button>
+                                <el-button v-if="doneCount > 0" circle size="default" plain title="Löschen"
+                                    class="!ml-0" @click="clearDone">
+                                    <el-icon :size="14" class="text-red-500">
+                                        <Delete />
+                                    </el-icon>
+                                </el-button>
                             </div>
                         </div>
 
                         <ul v-if="showDone" class="divide-y divide-gray-100 opacity-80">
-                            <li v-for="item in doneItems" :key="item.id" class="group flex items-center gap-3 py-2">
-                                <input type="checkbox" class="h-4 w-4 accent-blue-600" v-model="item.checked"
-                                    @change="toggle(item)" />
+                            <li v-for="item in doneItems" :key="item.id"
+                                class="group grid grid-cols-[auto_minmax(0,1fr)_auto] sm:grid-cols-[auto_minmax(0,1fr)_90px_auto] items-center gap-3 py-2">
+                                <!-- Checkbox -->
+                                <input type="checkbox" class="h-4 w-4 accent-blue-600 cursor-pointer"
+                                    v-model="item.checked" @change="toggle(item)" />
 
-                                <div class="flex-1 min-w-0">
+                                <!-- Title -->
+                                <div class="min-w-0">
                                     <span class="block truncate line-through text-gray-500">
                                         {{ item.title }}
                                     </span>
+
+                                    <!-- Mobile quantity -->
+                                    <span v-if="item.quantity || item.unitText"
+                                        class="block sm:hidden text-xs text-gray-400 mt-0.5 line-through">
+                                        {{ formatQuantity(item.quantity) }}
+                                        {{ item.unitText }}
+                                    </span>
                                 </div>
 
-                                <el-dropdown trigger="click">
+                                <!-- Desktop quantity -->
+                                <div
+                                    class="hidden sm:block text-sm text-gray-500 text-right tabular-nums whitespace-nowrap line-through">
+                                    <template v-if="item.quantity || item.unitText">
+                                        {{ formatQuantity(item.quantity) }}
+                                        {{ item.unitText }}
+                                    </template>
+                                </div>
+
+                                <!-- Actions -->
+                                <el-dropdown v-if="can(PERM.LIST_EDIT)" trigger="click">
                                     <button class="icon-action">
                                         <el-icon>
                                             <MoreFilled />
@@ -226,7 +289,7 @@
                                     <template #dropdown>
                                         <el-dropdown-menu>
                                             <el-dropdown-item @click="openRenameItemModal(item)">
-                                                Umbenennen
+                                                Bearbeiten
                                             </el-dropdown-item>
 
                                             <el-dropdown-item class="text-red-500" @click="removeItem(item)">
@@ -255,7 +318,7 @@
                             Abbrechen
                         </el-button>
 
-                        <el-button type="primary" :loading="renameLoading" @click="saveRenameList">
+                        <el-button type="primary" :loading="renameLoading" @click="saveRenameList" :disabled="!renameListTitle">
                             Speichern
                         </el-button>
                     </template>
@@ -266,8 +329,20 @@
                     align-center>
                     <el-form label-position="top">
                         <el-form-item label="Bezeichnung">
-                            <el-input v-model="renameItemTitle" @keyup.enter="saveRenameItem" />
+                            <el-input v-model="renameItemTitle" size="large" @keyup.enter="saveRenameItem" />
                         </el-form-item>
+
+                        <div class="grid grid-cols-[1fr_1fr] gap-2">
+                            <el-form-item label="Menge">
+                                <el-input v-model="renameItemQuantity" type="number" placeholder="Menge" clearable
+                                    size="large" class="w-full" />
+                            </el-form-item>
+
+                            <el-form-item label="Einheit">
+                                <el-autocomplete v-model="renameItemUnitText" :fetch-suggestions="queryUnits"
+                                    placeholder="Einheit" clearable size="large" class="w-full" />
+                            </el-form-item>
+                        </div>
                     </el-form>
 
                     <template #footer>
@@ -275,7 +350,8 @@
                             Abbrechen
                         </el-button>
 
-                        <el-button type="primary" :loading="renameLoading" @click="saveRenameItem">
+                        <el-button type="primary" :loading="renameLoading" @click="saveRenameItem"
+                            :disabled="!renameItemTitle || hasQuantityUnitMismatch(renameItemQuantity, renameItemUnitText)">
                             Speichern
                         </el-button>
                     </template>
@@ -354,6 +430,30 @@ const filterOptions = [
     { label: "Erledigt", value: "checked" },
 ];
 
+const showAddDetails = ref(false);
+
+const newQuantity = ref(null);
+const newUnitText = ref("");
+
+const renameItemQuantity = ref(null);
+const renameItemUnitText = ref("");
+
+const unitOptions = [
+    "g",
+    "kg",
+    "ml",
+    "l",
+    "Stück",
+    "Packung",
+    "Dose",
+    "Glas",
+    "Flasche",
+    "Bund",
+    "EL",
+    "TL",
+    "Prise"
+];
+
 onMounted(async () => {
     await getList();
 });
@@ -391,28 +491,48 @@ async function loadItems() {
 
 async function addItem() {
     if (!list.value?.id) return;
+    toggleLoading();
+
     const title = newItem.value.trim();
     if (!title) return;
+
+    if (hasQuantityUnitMismatch(newQuantity.value, newUnitText.value)) {
+        ElMessage.warning("Bitte Menge und Einheit gemeinsam angeben.");
+        return;
+    }
+
+    const quantity = normalizeQuantity(newQuantity.value);
+    const unitText = normalizeUnitText(newUnitText.value);
 
     adding.value = true;
 
     try {
-        const response = await listService.addItem(list.value.id, title);
+        const response = await listService.addItem(list.value.id, {
+            title,
+            quantity,
+            unitText
+        });
+
         items.value.unshift(response.data);
+
         newItem.value = "";
+        newQuantity.value = null;
+        newUnitText.value = "";
+
         await getList();
         ElMessage.success(title + " erfolgreich hinzugefügt");
     } catch (e) {
         console.error(e);
         ElMessage.error("Es ist ein Fehler aufgetreten");
     } finally {
+        toggleLoading();
         adding.value = false;
-        getList();
     }
 }
 
 async function removeItem(item) {
     if (!list.value?.id) return;
+    toggleLoading();
 
     try {
         await ElMessageBox.confirm(
@@ -449,6 +569,9 @@ async function removeItem(item) {
         items.value.splice(idx, 0, removed);
         ElMessage.error("Es ist ein Fehler aufgetreten");
     }
+    finally {
+        toggleLoading();
+    }
 }
 
 async function clearDone() {
@@ -472,6 +595,8 @@ async function clearDone() {
     const before = items.value;
     items.value = (items.value ?? []).filter((i) => i && !i.checked);
 
+    toggleLoading();
+
     try {
         const response = await listService.clearChecked(list.value.id)
         ElMessage.success(
@@ -487,12 +612,15 @@ async function clearDone() {
         console.error(e);
         items.value = before; // rollback
         ElMessage.error("Es ist ein Fehler aufgetreten");
+    } finally {
+        toggleLoading();
     }
 }
 
 async function toggle(item) {
     if (!list.value?.id) return;
     recomputeStatsFromItems();
+    toggleLoading();
 
     try {
         await listService.patchItem(list.value.id, item.id, {
@@ -504,13 +632,14 @@ async function toggle(item) {
         item.checked = !item.checked;
         recomputeStatsFromItems();
         ElMessage.error("Konnte Status nicht speichern.");
+    } finally {
+        toggleLoading();
     }
 }
 
 async function toggleDefault(listObject) {
     if (!listObject.id) return;
-
-    const title = listObject.title;
+    toggleLoading();
     const isDefault = true;
 
     try {
@@ -520,6 +649,8 @@ async function toggleDefault(listObject) {
     } catch (e) {
         console.error(e);
         ElMessage.error("Konnte Default-Liste nicht ändern");
+    } finally {
+        toggleLoading();
     }
 }
 
@@ -528,7 +659,7 @@ async function saveRenameList() {
 
     const title = renameListTitle.value.trim();
     if (!title) return;
-
+    toggleLoading();
     renameLoading.value = true;
     try {
         const response = await listService.patchList(list.value.id, { title })
@@ -542,6 +673,7 @@ async function saveRenameList() {
         ElMessage.error("Umbenennen fehlgeschlagen");
     } finally {
         renameLoading.value = false;
+        toggleLoading();
     }
 }
 
@@ -551,9 +683,20 @@ async function saveRenameItem() {
     const title = renameItemTitle.value.trim();
     if (!title) return;
 
+    if (hasQuantityUnitMismatch(renameItemQuantity.value, renameItemUnitText.value)) {
+        ElMessage.warning("Bitte Menge und Einheit gemeinsam angeben.");
+        return;
+    }
+
+    toggleLoading();
+
     renameLoading.value = true;
     try {
-        const response = await listService.patchItem(list.value.id, item.value.id, { title })
+        const response = await listService.patchItem(list.value.id, item.value.id, {
+            title,
+            quantity: normalizeQuantity(renameItemQuantity.value),
+            unitText: normalizeUnitText(renameItemUnitText.value)
+        });
 
         const updated = response.data;
         const idx = items.value.findIndex((i) => i?.id === item.value.id);
@@ -574,6 +717,7 @@ async function saveRenameItem() {
         ElMessage.error("Umbenennen fehlgeschlagen");
     } finally {
         renameLoading.value = false;
+        toggleLoading();
     }
 }
 
@@ -587,15 +731,51 @@ function openRenameListModal() {
 
 function openRenameItemModal(itemClicked) {
     if (!itemClicked) return;
+
     item.value = itemClicked;
     renameItemTitle.value = (itemClicked.title ?? "").toString();
+    renameItemQuantity.value = itemClicked.quantity ?? null;
+    renameItemUnitText.value = itemClicked.unitText ?? "";
+
     openRenameItem.value = true;
 }
 
-function recomputeStatsFromItems() {
-    if (!list.value?.stats) return;
-    list.value.stats.total = items.value.length;
-    list.value.stats.checked = items.value.filter((i) => i.checked).length;
+function normalizeQuantity(value) {
+    if (value === null || value === undefined || value === "") return null;
+
+    const numberValue = Number(value);
+    if (Number.isNaN(numberValue)) return null;
+
+    return numberValue;
+}
+
+function normalizeUnitText(value) {
+    const normalized = (value ?? "").toString().trim();
+    return normalized.length > 0 ? normalized : null;
+}
+
+function formatItemLabel(item) {
+    const quantity = item.quantity ?? null;
+    const unitText = item.unitText ?? "";
+    const title = item.title ?? "";
+
+    if (quantity !== null && unitText) return `${quantity} ${unitText} ${title}`;
+    if (quantity !== null) return `${quantity} ${title}`;
+    if (unitText) return `${unitText} ${title}`;
+
+    return title;
+}
+
+function formatQuantity(value) {
+    if (value === null || value === undefined) return "";
+
+    const numberValue = Number(value);
+
+    if (Number.isInteger(numberValue)) {
+        return numberValue.toString();
+    }
+
+    return numberValue.toFixed(2).replace(/\.?0+$/, "");
 }
 
 function toggleLoading() {
@@ -610,6 +790,29 @@ function toggleLoading() {
         loadingInstance?.close();
         loadingInstance = null;
     }
+}
+
+function queryUnits(queryString, callback) {
+    const results = unitOptions
+        .filter((u) =>
+            u.toLowerCase().includes(queryString.toLowerCase())
+        )
+        .map((u) => ({ value: u }));
+
+    callback(results);
+}
+
+function hasQuantityUnitMismatch(quantity, unitText) {
+    const hasQuantity = quantity !== null && quantity !== undefined && quantity !== "";
+    const hasUnitText = !!(unitText ?? "").toString().trim();
+
+    return hasQuantity !== hasUnitText;
+}
+
+function recomputeStatsFromItems() {
+    if (!list.value?.stats) return;
+    list.value.stats.total = items.value.length;
+    list.value.stats.checked = items.value.filter((i) => i.checked).length;
 }
 
 </script>
