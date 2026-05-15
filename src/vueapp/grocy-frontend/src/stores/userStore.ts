@@ -41,18 +41,27 @@ export const useUserStore = defineStore("user", () => {
 	async function login(payload: LoginRequest) {
 		const data = await authService.login(payload);
 		token.value = data.accessToken;
+
 		await loadMe(true);
+
 		const householdStore = useHouseholdStore();
-		await householdStore.loadActiveHousehold();
-		const mel = me.value;
-		await householdStore.selectHousehold(me?.value?.activeHouseholdId);
+
+		if (me.value?.activeHouseholdId) {
+			await householdStore.loadActiveHousehold();
+		} else {
+			householdStore.activeHousehold = null;
+			householdStore.activeHouseholdId = null;
+		}
 	}
 
 	async function logout() {
+		token.value = null;
 		me.value = null;
+		localStorage.removeItem(ACCESS_TOKEN_KEY);
 
 		const householdStore = useHouseholdStore();
-		// householdStore.clear();
+		householdStore.activeHousehold = null;
+		householdStore.activeHouseholdId = null;
 	}
 
 	async function setActiveHousehold(householdId: string) {
@@ -69,11 +78,16 @@ export const useUserStore = defineStore("user", () => {
 		password: string;
 	}) {
 		await userService.register(payload);
-		await authService.login({
+
+		const data = await authService.login({
 			email: payload.email,
 			password: payload.password
 		});
+
+		token.value = data.accessToken;
+
 		await loadMe(true);
+
 		const householdStore = useHouseholdStore();
 		await householdStore.loadActiveHousehold();
 	}

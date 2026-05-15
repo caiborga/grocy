@@ -1,28 +1,13 @@
+import { Household } from "@/models/Household";
 import api from "@/services/api";
-
-export type HouseholdDto = {
-	id: string;
-	name?: string;
-	title?: string;
-	archived?: boolean;
-};
-
-export type HouseholdDetailDto = {
-	id: string;
-	name?: string;
-	title?: string;
-	archived?: boolean;
-	members: any[];
-	lists: any[];
-};
 
 export const householdService = {
 	getAll() {
-		return api.get<HouseholdDto[]>("/households");
+		return api.get<Household[]>("/households");
 	},
 
 	getById(householdId: string) {
-		return api.get<HouseholdDetailDto>(`/households/${householdId}`);
+		return api.get<Household>(`/households/${householdId}`);
 	},
 
 	create(name: string) {
