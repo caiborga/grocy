@@ -10,6 +10,7 @@ import { useHouseholdStore } from "@/stores/householdStore";
 import { ACCESS_TOKEN_KEY } from "@/constants/auth";
 
 import Register from "@/pages/Register.vue";
+import Landing from "@/pages/Landing.vue";
 import Login from "@/pages/Login.vue";
 import List from "@/pages/List.vue";
 import HouseHolds from "@/pages/HouseHolds.vue";
@@ -18,6 +19,7 @@ import NotFound from "@/pages/NotFound.vue";
 
 type AppRouteMeta = {
 	requiresAuth?: boolean;
+	guestOnly?: boolean;
 };
 
 const router = createRouter({
@@ -25,16 +27,18 @@ const router = createRouter({
 	routes: [
 		{
 			path: "/",
-			redirect: "/lists/default",
-			meta: { requiresAuth: true } satisfies AppRouteMeta
+			component: Landing,
+			meta: { guestOnly: true } satisfies AppRouteMeta
 		},
 		{
 			path: "/login",
-			component: Login
+			component: Login,
+			meta: { guestOnly: true } satisfies AppRouteMeta
 		},
 		{
 			path: "/register",
-			component: Register
+			component: Register,
+			meta: { guestOnly: true } satisfies AppRouteMeta
 		},
 		{
 			path: "/join",
@@ -50,27 +54,30 @@ const router = createRouter({
 			component: HouseHolds,
 			meta: { requiresAuth: true } satisfies AppRouteMeta
 		},
-		{ path: "/:pathMatch(.*)*", component: NotFound }
+		{
+			path: "/:pathMatch(.*)*",
+			component: NotFound
+		}
 	]
 });
 
 router.beforeEach(
 	async (to: RouteLocationNormalized): Promise<NavigationGuardReturn> => {
 		const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-		const requiresAuth = !!(to.meta as AppRouteMeta)?.requiresAuth;
+		const meta = to.meta as AppRouteMeta;
 
-		// Public
-		if (!requiresAuth) {
-			if (to.path === "/login" && token) return "/lists/default";
+		if (meta.guestOnly && token) {
+			return "/lists/default";
+		}
+
+		if (!meta.requiresAuth) {
 			return true;
 		}
 
-		// Secure Route without Token -> Login
 		if (!token) {
 			return { path: "/login", query: { redirect: to.fullPath } };
 		}
 
-		// Token available
 		const userStore = useUserStore();
 		const householdStore = useHouseholdStore();
 
@@ -85,6 +92,7 @@ router.beforeEach(
 				householdStore.deleteActiveHousehold?.();
 				localStorage.removeItem(ACCESS_TOKEN_KEY);
 				localStorage.removeItem("user");
+
 				return { path: "/login", query: { redirect: to.fullPath } };
 			}
 
