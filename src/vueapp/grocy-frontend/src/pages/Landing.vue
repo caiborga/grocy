@@ -62,7 +62,9 @@
         <section class="cta-section">
             <h2>Bereit für einen aufgeräumten Einkauf?</h2>
             <p>Öffne Grocy, teile Listen mit deinem Haushalt und vergiss das Zettelchaos.</p>
-            <el-button type="primary" size="large" round>Jetzt loslegen</el-button>
+            <el-button type="primary" size="large" round tag="router-link" to="/register">
+                Jetzt loslegen
+            </el-button>
         </section>
     </main>
 </template>
@@ -412,6 +414,7 @@ const features = [
         grid-template-columns: 1fr;
     }
 }
+
 @media (max-width: 420px) {
     .topbar-logo {
         width: 120px;

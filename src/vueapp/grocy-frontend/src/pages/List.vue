@@ -139,15 +139,12 @@
                                 </span>
 
                                 <el-dropdown trigger="click" @command="selectedSort = $event">
-                                    <button class="text-action inline-flex items-center gap-1">
-                                        {{ selectedSortLabel }}
 
-                                        <el-button circle size="default" plain title="Sortieren">
-                                            <el-icon>
-                                                <Sort />
-                                            </el-icon>
-                                        </el-button>
-                                    </button>
+                                    <el-button circle size="default" plain title="Sortieren">
+                                        <el-icon>
+                                            <Sort />
+                                        </el-icon>
+                                    </el-button>
 
                                     <template #dropdown>
                                         <el-dropdown-menu>
@@ -318,7 +315,8 @@
                             Abbrechen
                         </el-button>
 
-                        <el-button type="primary" :loading="renameLoading" @click="saveRenameList" :disabled="!renameListTitle">
+                        <el-button type="primary" :loading="renameLoading" @click="saveRenameList"
+                            :disabled="!renameListTitle">
                             Speichern
                         </el-button>
                     </template>
