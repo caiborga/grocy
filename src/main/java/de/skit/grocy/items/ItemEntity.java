@@ -32,6 +32,8 @@ public class ItemEntity {
     private String unitText;
     private UUID categoryId;
     private String notes;
+    private UUID sourceRecipeId;
+    private String sourceRecipeTitle;
 
     @Column(nullable = false)
     private boolean checked = false;
@@ -118,6 +120,14 @@ public class ItemEntity {
         return checkedAt;
     }
 
+    public UUID getSourceRecipeId() {
+        return sourceRecipeId;
+    }
+
+    public String getSourceRecipeTitle() {
+        return sourceRecipeTitle;
+    }
+
     // ---------- Setter ----------
 
     public void setTitle(String title) {
@@ -171,5 +181,13 @@ public class ItemEntity {
 
     public void setUpdatedAt(OffsetDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setSourceRecipeId(UUID sourceRecipeId) {
+        this.sourceRecipeId = sourceRecipeId;
+    }
+
+    public void setSourceRecipeTitle(String sourceRecipeTitle) {
+        this.sourceRecipeTitle = sourceRecipeTitle;
     }
 }

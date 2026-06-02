@@ -16,6 +16,9 @@ import List from "@/pages/List.vue";
 import HouseHolds from "@/pages/HouseHolds.vue";
 import JoinInvite from "@/pages/JoinInvite.vue";
 import NotFound from "@/pages/NotFound.vue";
+import RecipeListView from "@/pages/RecipeListView.vue";
+import RecipeFormView from "@/pages/RecipeFormView.vue";
+import RecipeDetailView from "@/pages/RecipeDetailView.vue";
 
 type AppRouteMeta = {
 	requiresAuth?: boolean;
@@ -52,6 +55,26 @@ const router = createRouter({
 		{
 			path: "/households",
 			component: HouseHolds,
+			meta: { requiresAuth: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/recipes",
+			component: RecipeListView,
+			meta: { requiresAuth: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/recipes/new",
+			component: RecipeFormView,
+			meta: { requiresAuth: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/recipes/:id/edit",
+			component: RecipeFormView,
+			meta: { requiresAuth: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/recipes/:id",
+			component: RecipeDetailView,
 			meta: { requiresAuth: true } satisfies AppRouteMeta
 		},
 		{

@@ -18,7 +18,6 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Sort;
 
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,9 +29,7 @@ public class ItemService {
     private final ListRepository listRepository;
     private final HouseholdMemberRepository householdMemberRepository;
 
-    public ItemService(
-            ItemRepository repository,
-            ListRepository listRepository,
+    public ItemService(ItemRepository repository, ListRepository listRepository,
             HouseholdMemberRepository householdMemberRepository) {
         this.repository = repository;
         this.listRepository = listRepository;
@@ -40,10 +37,7 @@ public class ItemService {
     }
 
     @Transactional
-    public ListItem createItem(
-            UUID listId,
-            ItemCreate dto,
-            UserPrincipal principal) {
+    public ListItem createItem(UUID listId, ItemCreate dto, UserPrincipal principal) {
 
         UserEntity user = principal.getUser();
 
@@ -66,18 +60,13 @@ public class ItemService {
         return toDto(item);
     }
 
-    public List<ListItem> getItems(
-            UUID listId,
-            String filter,
-            String sort,
+    public List<ListItem> getItems(UUID listId, String filter, String sort,
             UserPrincipal principal) {
 
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(
-                principal.getUser(),
-                list.getHousehold());
+        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
         String normalizedFilter = (filter == null) ? "all" : filter.toLowerCase();
 
@@ -90,39 +79,26 @@ public class ItemService {
             default -> throw new IllegalArgumentException("Invalid filter: " + filter);
         };
 
-        return entities.stream()
-                .map(this::toDto)
-                .toList();
+        return entities.stream().map(this::toDto).toList();
     }
 
-    public Optional<ListItem> getItem(
-            UUID listId,
-            UUID itemId,
-            UserPrincipal principal) {
+    public Optional<ListItem> getItem(UUID listId, UUID itemId, UserPrincipal principal) {
 
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(
-                principal.getUser(),
-                list.getHousehold());
+        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
-        return repository.findByIdAndList(itemId, list)
-                .map(this::toDto);
+        return repository.findByIdAndList(itemId, list).map(this::toDto);
     }
 
     @Transactional
-    public ListItem deleteItem(
-            UUID listId,
-            UUID itemId,
-            UserPrincipal principal) {
+    public ListItem deleteItem(UUID listId, UUID itemId, UserPrincipal principal) {
 
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(
-                principal.getUser(),
-                list.getHousehold());
+        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
@@ -143,18 +119,12 @@ public class ItemService {
     }
 
     @Transactional
-    public ListItem setChecked(
-            UUID listId,
-            UUID itemId,
-            boolean checked,
-            UserPrincipal principal) {
+    public ListItem setChecked(UUID listId, UUID itemId, boolean checked, UserPrincipal principal) {
 
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(
-                principal.getUser(),
-                list.getHousehold());
+        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
@@ -165,19 +135,13 @@ public class ItemService {
     }
 
     @Transactional
-    public ListItem updateItem(
-            UUID listId,
-            UUID itemId,
-            ItemPatch body,
-            UserPrincipal principal) {
+    public ListItem updateItem(UUID listId, UUID itemId, ItemPatch body, UserPrincipal principal) {
         // 1. Liste laden
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
         // 2. Berechtigung prüfen
-        assertUserIsMemberOfHousehold(
-                principal.getUser(),
-                list.getHousehold());
+        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
         // 3. Item laden
         ItemEntity item = repository.findByIdAndList(itemId, list)
@@ -211,33 +175,20 @@ public class ItemService {
     }
 
     private ListItem toDto(ItemEntity entity) {
-        return new ListItem(
-                entity.getId(),
-                entity.getList().getId(),
-                entity.getHousehold().getId(),
-                entity.getTitle(),
-                entity.getQuantity(),
-                entity.getUnitText(),
-                entity.getCategoryId(),
-                entity.isChecked(),
-                entity.getNotes(),
-                entity.getSortIndex(),
-                entity.getVersion(),
-                entity.getCreatedBy().getId(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt());
+        return new ListItem(entity.getId(), entity.getList().getId(), entity.getHousehold().getId(),
+                entity.getTitle(), entity.getQuantity(), entity.getUnitText(),
+                entity.getCategoryId(), entity.isChecked(), entity.getNotes(),
+                entity.getSortIndex(), entity.getVersion(), entity.getCreatedBy().getId(),
+                entity.getCreatedAt(), entity.getUpdatedAt(), entity.getSourceRecipeId(),
+                entity.getSourceRecipeTitle());
     }
 
-    private void assertUserIsMemberOfHousehold(
-            UserEntity user,
-            HouseholdEntity household) {
+    private void assertUserIsMemberOfHousehold(UserEntity user, HouseholdEntity household) {
 
-        boolean isMember = householdMemberRepository
-                .existsByUserAndHousehold(user, household);
+        boolean isMember = householdMemberRepository.existsByUserAndHousehold(user, household);
 
         if (!isMember) {
-            throw new AccessDeniedException(
-                    "User is not a member of this household");
+            throw new AccessDeniedException("User is not a member of this household");
         }
     }
 }

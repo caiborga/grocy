@@ -178,9 +178,18 @@
 
                                 <!-- Title -->
                                 <div class="min-w-0">
-                                    <span class="block truncate text-gray-900">
-                                        {{ item.title }}
-                                    </span>
+                                    <div class="flex min-w-0 items-center gap-1.5">
+                                        <span class="truncate text-gray-900">
+                                            {{ item.title }}
+                                        </span>
+
+                                        <el-tooltip v-if="item.sourceRecipeId" placement="top"
+                                            :content="sourceRecipeTooltip(item)">
+                                            <el-icon :size="14" class="shrink-0 text-blue-500">
+                                                <InfoFilled />
+                                            </el-icon>
+                                        </el-tooltip>
+                                    </div>
 
                                     <!-- Mobile quantity -->
                                     <span v-if="item.quantity || item.unitText"
@@ -254,9 +263,18 @@
 
                                 <!-- Title -->
                                 <div class="min-w-0">
-                                    <span class="block truncate line-through text-gray-500">
-                                        {{ item.title }}
-                                    </span>
+                                    <div class="flex min-w-0 items-center gap-1.5">
+                                        <span class="truncate line-through text-gray-500">
+                                            {{ item.title }}
+                                        </span>
+
+                                        <el-tooltip v-if="item.sourceRecipeId" placement="top"
+                                            :content="sourceRecipeTooltip(item)">
+                                            <el-icon :size="14" class="shrink-0 text-blue-400">
+                                                <InfoFilled />
+                                            </el-icon>
+                                        </el-tooltip>
+                                    </div>
 
                                     <!-- Mobile quantity -->
                                     <span v-if="item.quantity || item.unitText"
@@ -774,6 +792,12 @@ function formatQuantity(value) {
     }
 
     return numberValue.toFixed(2).replace(/\.?0+$/, "");
+}
+
+function sourceRecipeTooltip(item) {
+    return item.sourceRecipeTitle
+        ? `Aus Rezept: ${item.sourceRecipeTitle}`
+        : "Aus einem Rezept hinzugefügt";
 }
 
 function toggleLoading() {

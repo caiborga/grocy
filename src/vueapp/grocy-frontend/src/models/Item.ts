@@ -3,4 +3,6 @@ export interface Item {
 	checked?: boolean;
 	quantity?: number;
 	unitText?: string;
+	sourceRecipeId?: string;
+	sourceRecipeTitle?: string;
 }

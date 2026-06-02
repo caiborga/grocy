@@ -17,5 +17,7 @@ public record ListItem(
         int version,
         UUID createdBy,
         OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        OffsetDateTime updatedAt,
+        UUID sourceRecipeId,
+        String sourceRecipeTitle
 ) {}
