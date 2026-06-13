@@ -34,7 +34,7 @@
             <!-- Footer -->
             <div class="text-center mt-6 text-sm">
                 <span class="text-text-secondary-light dark:text-text-secondary-dark">
-                    Bereits regisitriert?
+                    Bereits registriert?
                 </span>
                 <router-link :to="{
                     path: '/login',
@@ -99,20 +99,14 @@ function submit() {
         const loader = ElLoading.service({ lock: true });
 
         try {
-            await userStore.registerAndLogin({
+            await userStore.register({
                 displayName: form.value.name,
                 email: form.value.email,
                 password: form.value.password
             });
 
             ElMessage.success("Account erstellt");
-
-            const redirect = route.query.redirect;
-            if (typeof redirect === "string" && redirect.startsWith("/")) {
-                router.push(redirect);
-            } else {
-                router.push("/lists/default");
-            }
+            router.push({ path: "/check-email", query: { email: form.value.email } });
         } catch (e) {
             console.error(e);
             ElMessage.error("Registrierung fehlgeschlagen");

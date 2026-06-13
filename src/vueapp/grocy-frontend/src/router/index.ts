@@ -10,6 +10,10 @@ import { useHouseholdStore } from "@/stores/householdStore";
 import { ACCESS_TOKEN_KEY } from "@/constants/auth";
 
 import Register from "@/pages/Register.vue";
+import CheckEmail from "@/pages/CheckEmail.vue";
+import VerifyEmail from "@/pages/VerifyEmail.vue";
+import ForgotPassword from "@/pages/ForgotPassword.vue";
+import ResetPassword from "@/pages/ResetPassword.vue";
 import Landing from "@/pages/Landing.vue";
 import Login from "@/pages/Login.vue";
 import List from "@/pages/List.vue";
@@ -41,6 +45,26 @@ const router = createRouter({
 		{
 			path: "/register",
 			component: Register,
+			meta: { guestOnly: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/check-email",
+			component: CheckEmail,
+			meta: { guestOnly: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/verify-email",
+			component: VerifyEmail,
+			meta: { guestOnly: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/forgot-password",
+			component: ForgotPassword,
+			meta: { guestOnly: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/reset-password",
+			component: ResetPassword,
 			meta: { guestOnly: true } satisfies AppRouteMeta
 		},
 		{

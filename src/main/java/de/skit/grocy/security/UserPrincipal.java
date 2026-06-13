@@ -6,6 +6,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.time.OffsetDateTime;
 
 public class UserPrincipal implements UserDetails {
 
@@ -41,7 +42,8 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return user.getLockedUntil() == null
+                || user.getLockedUntil().isBefore(OffsetDateTime.now());
     }
 
     @Override
@@ -51,6 +53,6 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return user.isEmailVerified();
     }
 }

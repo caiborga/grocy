@@ -13,3 +13,11 @@ spring:
 server:
    port: ${PORT:8080}
    address: 0.0.0.0
+
+app:
+   jwt:
+      secret: ${JWT_SECRET:dev-only-secret-key-for-local-tests-123456}
+   frontend-url: ${APP_FRONTEND_URL:http://localhost:8080}
+   mail:
+      from: ${APP_MAIL_FROM:noreply@grocy.local}
+      enabled: ${APP_MAIL_ENABLED:false}

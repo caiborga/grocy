@@ -2,6 +2,11 @@ package de.skit.grocy.integration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+
+import java.time.OffsetDateTime;
+
+import de.skit.grocy.user.UserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -23,20 +28,29 @@ public abstract class IntegrationTestBase {
     @Autowired
     protected ObjectMapper objectMapper;
 
+    @Autowired
+    protected UserRepository userRepository;
+
     protected String registerAndLogin(String email) throws Exception {
 
-        // User registrieren
-        mockMvc.perform(post("/api/users")
+        mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                     {
+                      "displayName": "Test User",
                       "email": "%s",
                       "password": "secret123"
                     }
                 """.formatted(email)))
             .andExpect(status().isCreated());
 
-        // Login
+        userRepository.findByEmail(email)
+                .ifPresent(user -> {
+                    user.setEmailVerified(true);
+                    user.setEmailVerifiedAt(OffsetDateTime.now());
+                    userRepository.save(user);
+                });
+
         String loginResponse =
             mockMvc.perform(post("/api/auth/login")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -51,7 +65,7 @@ public abstract class IntegrationTestBase {
                 .getResponse()
                 .getContentAsString();
 
-        return JsonPath.read(loginResponse, "$.token");
+        return JsonPath.read(loginResponse, "$.accessToken");
     }
 
     protected String createHousehold(String token, String name) throws Exception {

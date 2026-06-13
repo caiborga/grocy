@@ -19,6 +19,12 @@
                     <el-input v-model="form.password" type="password" show-password autocomplete="current-password" />
                 </el-form-item>
 
+                <div class="flex justify-end -mt-2 mb-4 text-sm">
+                    <router-link to="/forgot-password" class="text-primary font-medium hover:underline">
+                        Passwort vergessen?
+                    </router-link>
+                </div>
+
                 <!-- Submit -->
                 <el-button type="primary" class="w-full mt-2" :loading="loading" @click="submit" native-type="submit">
                     Login
@@ -96,7 +102,11 @@ function submit() {
             console.error("LOGIN ERROR", e);
             console.error("status", e?.response?.status);
             console.error("data", e?.response?.data);
-            ElMessage.error("Login fehlgeschlagen");
+            if (e?.response?.status === 403 && e?.response?.data?.tokenType === "email_not_verified") {
+                ElMessage.error("Bitte bestätige zuerst deine E-Mail-Adresse.");
+            } else {
+                ElMessage.error("Login fehlgeschlagen");
+            }
         } finally {
             loading.value = false;
         }

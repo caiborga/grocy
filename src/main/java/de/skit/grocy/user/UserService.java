@@ -39,21 +39,28 @@ public class UserService {
         this.listRepository = listRepository;
         this.mapper = mapper;
         this.encoder = encoder;
-
     }
 
     @Transactional
     public UserResponse createUser(UserCreate dto) {
+        return mapper.toDto(createUserEntity(dto));
+    }
 
-        // 1️⃣ User anlegen
+    @Transactional
+    public UserEntity createUserEntity(UserCreate dto) {
+        String email = normalizeEmail(dto.email());
+
+        if (userRepository.existsByEmail(email)) {
+            throw new IllegalArgumentException("Email ist bereits registriert");
+        }
+
         UserEntity user = new UserEntity();
-        user.setEmail(dto.email());
+        user.setEmail(email);
         user.setDisplayName(dto.displayName());
         user.setPasswordHash(encoder.encode(dto.password()));
 
         UserEntity savedUser = userRepository.save(user);
 
-        // 2️⃣ Household anlegen
         HouseholdEntity household = new HouseholdEntity();
         household.setName("Neuer Haushalt");
 
@@ -61,7 +68,6 @@ public class UserService {
 
         savedUser.setActiveHouseholdId(savedHousehold.getId());
 
-        // 3️⃣ Membership anlegen
         HouseholdMemberEntity member = new HouseholdMemberEntity();
         member.setUser(savedUser);
         member.setHousehold(savedHousehold);
@@ -69,7 +75,6 @@ public class UserService {
 
         householdMemberRepository.save(member);
 
-        // 4️⃣ Default-Liste anlegen
         ListEntity defaultList = new ListEntity();
         defaultList.setTitle("Einkaufsliste");
         defaultList.setHousehold(savedHousehold);
@@ -79,7 +84,7 @@ public class UserService {
 
         listRepository.save(defaultList);
 
-        return mapper.toDto(savedUser);
+        return savedUser;
     }
 
     public List<UserResponse> getAllUsers() {
@@ -112,5 +117,9 @@ public class UserService {
         UserEntity entity = userRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("User " + id + " not found"));
         userRepository.delete(entity);
+    }
+
+    private String normalizeEmail(String email) {
+        return email == null ? null : email.trim().toLowerCase();
     }
 }

@@ -36,6 +36,15 @@ public class UserEntity {
     @Column(nullable = false)
     private OffsetDateTime updatedAt;
 
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean emailVerified = false;
+
+    private OffsetDateTime emailVerifiedAt;
+
+    private OffsetDateTime lastLoginAt;
+
+    private OffsetDateTime lockedUntil;
+
     @OneToMany(mappedBy = "user")
     private List<HouseholdMemberEntity> households = new ArrayList<>();
 
@@ -46,7 +55,7 @@ public class UserEntity {
     }
 
     public UserEntity(String email, String passwordHash, String displayName) {
-        this.email = email;
+        setEmail(email);
         this.passwordHash = passwordHash;
         this.displayName = displayName;
     }
@@ -91,10 +100,26 @@ public class UserEntity {
         return activeHouseholdId;
     }
 
+    public boolean isEmailVerified() {
+        return emailVerified;
+    }
+
+    public OffsetDateTime getEmailVerifiedAt() {
+        return emailVerifiedAt;
+    }
+
+    public OffsetDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public OffsetDateTime getLockedUntil() {
+        return lockedUntil;
+    }
+
     // ---------- Setter ----------
 
     public void setEmail(String email) {
-        this.email = email;
+        this.email = email == null ? null : email.trim().toLowerCase();
     }
 
     public void setDisplayName(String displayName) {
@@ -115,5 +140,21 @@ public class UserEntity {
 
     public void setActiveHouseholdId(UUID activeHouseholdId) {
         this.activeHouseholdId = activeHouseholdId;
+    }
+
+    public void setEmailVerified(boolean emailVerified) {
+        this.emailVerified = emailVerified;
+    }
+
+    public void setEmailVerifiedAt(OffsetDateTime emailVerifiedAt) {
+        this.emailVerifiedAt = emailVerifiedAt;
+    }
+
+    public void setLastLoginAt(OffsetDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
+    public void setLockedUntil(OffsetDateTime lockedUntil) {
+        this.lockedUntil = lockedUntil;
     }
 }

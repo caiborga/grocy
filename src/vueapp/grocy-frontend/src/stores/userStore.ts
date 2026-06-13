@@ -1,6 +1,7 @@
 import { ACCESS_TOKEN_KEY } from "@/constants/auth";
 import { LoginRequest } from "@/models/Login";
 import { Me } from "@/models/Me";
+import { RegisterRequest } from "@/models/Register";
 import { authService } from "@/services/authService";
 import { userService } from "@/services/userService";
 import { defineStore } from "pinia";
@@ -72,24 +73,8 @@ export const useUserStore = defineStore("user", () => {
 		await householdStore.loadActiveHousehold();
 	}
 
-	async function registerAndLogin(payload: {
-		displayName: string;
-		email: string;
-		password: string;
-	}) {
-		await userService.register(payload);
-
-		const data = await authService.login({
-			email: payload.email,
-			password: payload.password
-		});
-
-		token.value = data.accessToken;
-
-		await loadMe(true);
-
-		const householdStore = useHouseholdStore();
-		await householdStore.loadActiveHousehold();
+	async function register(payload: RegisterRequest) {
+		return authService.register(payload);
 	}
 
 	return {
@@ -100,7 +85,7 @@ export const useUserStore = defineStore("user", () => {
 		loadMe,
 		login,
 		logout,
-		registerAndLogin,
+		register,
 		setActiveHousehold
 	};
 });

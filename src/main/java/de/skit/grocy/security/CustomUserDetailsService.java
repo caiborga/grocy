@@ -20,8 +20,10 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String email)
             throws UsernameNotFoundException {
 
+        String normalizedEmail = email == null ? null : email.trim().toLowerCase();
+
         UserEntity user = userRepository
-                .findByEmail(email)
+                .findByEmail(normalizedEmail)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found"));
 

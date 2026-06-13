@@ -5,10 +5,6 @@ export type RegisterRequest = {
 };
 
 export type RegisterResponse = {
-	id: string;
-	displayName: string;
 	email: string;
-	createdAt: string;
-	updatedAt: string;
-    activeHouseholdId: string;
+	message: string;
 };
