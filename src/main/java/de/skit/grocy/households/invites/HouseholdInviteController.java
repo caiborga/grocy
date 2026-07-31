@@ -20,30 +20,26 @@ public class HouseholdInviteController {
 
     private final String publicAppBaseUrl;
 
-    public HouseholdInviteController(
-            HouseholdInviteService inviteService,
-            @Value("${app.public-base-url:http://localhost:5173}") String publicAppBaseUrl
-    ) {
+    public HouseholdInviteController(HouseholdInviteService inviteService,
+            @Value("${app.frontend-url:http://localhost:5173}") String publicAppBaseUrl) {
         this.inviteService = inviteService;
         this.publicAppBaseUrl = publicAppBaseUrl;
     }
 
     // ------------------------------------------------------------
-    // POST /households/{householdId}/invites  (Invite)
+    // POST /households/{householdId}/invites (Invite)
     // ------------------------------------------------------------
     @PostMapping("/households/{householdId}/invites")
     @ResponseStatus(HttpStatus.CREATED)
-    public HouseholdInviteCreatedResponse createInvite(
-            @PathVariable UUID householdId,
+    public HouseholdInviteCreatedResponse createInvite(@PathVariable UUID householdId,
             @RequestBody HouseholdInviteCreateRequest request,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
+            @AuthenticationPrincipal UserPrincipal principal) {
         UUID currentUserId = principal.getUser().getId();
         return inviteService.createInvite(householdId, request, currentUserId, publicAppBaseUrl);
     }
 
     // ------------------------------------------------------------
-    // GET /invites/{token}  (Preview / Join-Seite)
+    // GET /invites/{token} (Preview / Join-Seite)
     // ------------------------------------------------------------
     @GetMapping("/invites/{token}")
     public HouseholdInvitePreviewResponse getInvitePreview(@PathVariable String token) {
@@ -51,14 +47,12 @@ public class HouseholdInviteController {
     }
 
     // ------------------------------------------------------------
-    // POST /invites/{token}/accept  (Invite annehmen)
+    // POST /invites/{token}/accept (Invite annehmen)
     // ------------------------------------------------------------
     @PostMapping("/invites/{token}/accept")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void acceptInvite(
-            @PathVariable String token,
-            @AuthenticationPrincipal UserPrincipal principal
-    ) {
+    public void acceptInvite(@PathVariable String token,
+            @AuthenticationPrincipal UserPrincipal principal) {
         UUID currentUserId = principal.getUser().getId();
         inviteService.acceptInvite(token, currentUserId);
     }
