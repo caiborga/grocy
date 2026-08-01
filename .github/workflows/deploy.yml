@@ -40,6 +40,6 @@ jobs:
                   username: root
                   key: ${{ secrets.SSH_PRIVATE_KEY }}
                   script: |
-                      cd /opt/containers/grocy  # Oder dein entsprechender Pfad
+                      cd /opt/grocy  # Oder dein entsprechender Pfad
                       docker compose pull       # Lädt das neue Image von GitHub
                       docker compose up -d      # Startet die Container mit dem neuen Image neu
