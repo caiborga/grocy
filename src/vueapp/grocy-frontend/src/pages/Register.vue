@@ -77,7 +77,7 @@ const rules = {
     ],
     password: [
         { required: true, message: "Passwort ist notwendig", trigger: "blur" },
-        { min: 6, message: "Mindestens 6 Zeichen", trigger: "blur" }
+        { min: 8, message: "Passwort muss mindestens 8 Zeichen lang sein", trigger: "blur" }
     ],
     passwordRepeat: [
         { required: true, message: "Bitte Passwort wiederholen", trigger: "blur" },
