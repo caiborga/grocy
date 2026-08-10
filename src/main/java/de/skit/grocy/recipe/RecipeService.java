@@ -3,6 +3,8 @@ package de.skit.grocy.recipe;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
+import de.skit.grocy.activity.ListActivityService;
+import de.skit.grocy.activity.ListActivityType;
 import de.skit.grocy.common.exceptions.EntityNotFoundException;
 import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.households.HouseholdEntity;
@@ -29,15 +31,18 @@ public class RecipeService {
     private final RecipeRepository recipeRepository;
     private final ListRepository listRepository;
     private final ItemRepository itemRepository;
+    private final ListActivityService listActivityService;
 
     public RecipeService(HouseholdRepository householdRepository,
             RecipeRepository recipeRepository,
             ListRepository listRepository,
-            ItemRepository itemRepository) {
+            ItemRepository itemRepository,
+            ListActivityService listActivityService) {
         this.householdRepository = householdRepository;
         this.recipeRepository = recipeRepository;
         this.listRepository = listRepository;
         this.itemRepository = itemRepository;
+        this.listActivityService = listActivityService;
     }
 
     @Transactional
@@ -179,6 +184,17 @@ public class RecipeService {
                 .toList();
 
         itemRepository.saveAll(items);
+
+        if (!items.isEmpty()) {
+            listActivityService.record(
+                    list,
+                    principal.getUser(),
+                    ListActivityType.RECIPE_ADDED_TO_LIST,
+                    null,
+                    null,
+                    items.size(),
+                    recipe.getTitle());
+        }
 
         return items.size();
     }

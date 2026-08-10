@@ -6,6 +6,7 @@ import { List } from "@/models/List";
 import { userService } from "@/services/userService";
 import { Role } from "@/models/Role";
 import { useUserStore } from "./userStore";
+import { useActivityStore } from "./activityStore";
 
 export const useHouseholdStore = defineStore("household", {
 	state: () => ({
@@ -34,12 +35,14 @@ export const useHouseholdStore = defineStore("household", {
 
 		async loadActiveHousehold() {
 			const userStore = useUserStore();
+			const activityStore = useActivityStore();
 			const householdId = userStore.me?.activeHouseholdId;
 
 			this.loading = true;
 			try {
 				if (!householdId) {
 					this.activeHousehold = null;
+					activityStore.reset();
 					return;
 				}
 
@@ -48,18 +51,21 @@ export const useHouseholdStore = defineStore("household", {
 				this.activeHousehold = res.data;
 				this.householdMembers = res.data.members ?? [];
 				this.householdlists = res.data.lists ?? [];
+				await activityStore.loadFeed(householdId);
 			} finally {
 				this.loading = false;
 			}
 		},
 
 		async selectHousehold(householdId: string) {
+			const activityStore = useActivityStore();
 			this.activeHouseholdId = householdId;
 			await userService.setActiveHousehold(householdId);
 			const res = await householdService.getById(householdId);
 			this.activeHousehold = res.data;
 			this.householdMembers = res.data.members ?? [];
 			this.householdlists = res.data.lists ?? [];
+			await activityStore.loadFeed(householdId);
 		},
 
 		async createHousehold(name: string) {
@@ -79,6 +85,7 @@ export const useHouseholdStore = defineStore("household", {
 			if (!this.activeHousehold) return;
 
 			const household = this.activeHousehold;
+			const activityStore = useActivityStore();
 
 			await householdService.archive(household.id, {
 				name: household.name,
@@ -90,6 +97,7 @@ export const useHouseholdStore = defineStore("household", {
 			);
 			this.activeHousehold = null;
 			this.activeHouseholdId = null;
+			activityStore.reset();
 		},
 
 		async updateMemberRole(memberId: string, role: Role) {

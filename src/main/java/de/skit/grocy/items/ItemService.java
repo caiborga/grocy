@@ -1,5 +1,7 @@
 package de.skit.grocy.items;
 
+import de.skit.grocy.activity.ListActivityService;
+import de.skit.grocy.activity.ListActivityType;
 import de.skit.grocy.common.exceptions.EntityNotFoundException;
 import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.households.HouseholdEntity;
@@ -28,12 +30,15 @@ public class ItemService {
     private final ItemRepository repository;
     private final ListRepository listRepository;
     private final HouseholdMemberRepository householdMemberRepository;
+    private final ListActivityService listActivityService;
 
     public ItemService(ItemRepository repository, ListRepository listRepository,
-            HouseholdMemberRepository householdMemberRepository) {
+            HouseholdMemberRepository householdMemberRepository,
+            ListActivityService listActivityService) {
         this.repository = repository;
         this.listRepository = listRepository;
         this.householdMemberRepository = householdMemberRepository;
+        this.listActivityService = listActivityService;
     }
 
     @Transactional
@@ -57,6 +62,15 @@ public class ItemService {
         item.setNotes(dto.notes());
 
         repository.save(item);
+
+        listActivityService.record(
+                list,
+                user,
+                ListActivityType.ITEM_ADDED,
+                item.getId(),
+                item.getTitle(),
+                null,
+                null);
 
         return toDto(item);
     }
@@ -104,7 +118,20 @@ public class ItemService {
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
 
+        String title = item.getTitle();
+        UUID deletedId = item.getId();
+
         repository.delete(item);
+
+        listActivityService.record(
+                list,
+                principal.getUser(),
+                ListActivityType.ITEM_DELETED,
+                deletedId,
+                title,
+                null,
+                null);
+
         return toDto(item);
 
     }
@@ -116,7 +143,20 @@ public class ItemService {
 
         assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
-        return repository.deleteByListAndCheckedTrue(list);
+        int deleted = repository.deleteByListAndCheckedTrue(list);
+
+        if (deleted > 0) {
+            listActivityService.record(
+                    list,
+                    principal.getUser(),
+                    ListActivityType.CHECKED_CLEARED,
+                    null,
+                    null,
+                    deleted,
+                    null);
+        }
+
+        return deleted;
     }
 
     @Transactional
@@ -130,33 +170,39 @@ public class ItemService {
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
 
-        item.setChecked(checked);
+        if (item.isChecked() != checked) {
+            item.setChecked(checked);
+            listActivityService.record(
+                    list,
+                    principal.getUser(),
+                    checked ? ListActivityType.ITEM_CHECKED : ListActivityType.ITEM_UNCHECKED,
+                    item.getId(),
+                    item.getTitle(),
+                    null,
+                    null);
+        }
 
         return toDto(item);
     }
 
     @Transactional
     public ListItem updateItem(UUID listId, UUID itemId, ItemPatch body, UserPrincipal principal) {
-        // 1. Liste laden
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        // 2. Berechtigung prüfen
         assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
 
-        // 3. Item laden
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
 
-        boolean changed = false;
+        boolean titleChanged = false;
+        Boolean checkedChangedTo = null;
 
-        // 4. checked patchen (auch false zulassen!)
-        if (body.checked() != null) {
+        if (body.checked() != null && item.isChecked() != body.checked()) {
             item.setChecked(body.checked());
-            changed = true;
+            checkedChangedTo = body.checked();
         }
 
-        // 5. title + Details patchen (Frontend sendet title immer mit Menge/Einheit/Marke)
         if (body.title() != null) {
             String trimmed = body.title().trim();
             if (trimmed.isEmpty()) {
@@ -166,15 +212,35 @@ public class ItemService {
             item.setQuantity(body.quantity());
             item.setUnitText(normalizeText(body.unitText()));
             item.setBrand(normalizeText(body.brand()));
-            changed = true;
+            titleChanged = true;
         }
 
-        // 6. Optional: nichts zu patchen → Fehler
-        if (!changed) {
+        if (body.checked() == null && body.title() == null) {
             throw new IllegalArgumentException("No fields provided to update");
         }
 
-        // 7. JPA dirty checking übernimmt das Speichern
+        if (titleChanged) {
+            listActivityService.record(
+                    list,
+                    principal.getUser(),
+                    ListActivityType.ITEM_UPDATED,
+                    item.getId(),
+                    item.getTitle(),
+                    null,
+                    null);
+        } else if (checkedChangedTo != null) {
+            listActivityService.record(
+                    list,
+                    principal.getUser(),
+                    checkedChangedTo
+                            ? ListActivityType.ITEM_CHECKED
+                            : ListActivityType.ITEM_UNCHECKED,
+                    item.getId(),
+                    item.getTitle(),
+                    null,
+                    null);
+        }
+
         return toDto(item);
     }
 
