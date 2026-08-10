@@ -1,94 +1,103 @@
 <template>
-	<main class="landing-page">
+	<main class="landing">
 		<header class="topbar">
 			<div class="topbar-inner">
-				<img :src="grocyLogo" alt="Grocy Logo" class="topbar-logo" />
+				<a href="#top" class="brand-link" aria-label="Grocy">
+					<img class="topbar-logo" src="/grocy.png" alt="Grocy Logo" />
+				</a>
 
 				<nav class="topbar-nav">
 					<router-link to="/login" class="topbar-link">
 						Einloggen
 					</router-link>
-
-					<router-link
-						to="/register"
-						class="topbar-link topbar-link-primary"
-					>
+					<router-link to="/register" class="topbar-cta">
 						Registrieren
 					</router-link>
 				</nav>
 			</div>
 		</header>
 
-		<section class="hero-section">
-			<div class="hero-copy">
-				<h1>Schluss mit Zettelchaos beim Einkaufen.</h1>
+		<section id="top" class="hero">
+			<div class="hero-media" aria-hidden="true">
+				<div class="hero-gradient" />
+				<div class="hero-pattern" />
+				<div class="hero-orb hero-orb-a" />
+				<div class="hero-orb hero-orb-b" />
+				<img
+					v-if="comicAvailable"
+					:src="comicImage"
+					alt=""
+					class="hero-img"
+					@error="comicAvailable = false"
+				/>
+			</div>
 
-				<p class="hero-text">
-					Grocy hilft dir, Einkaufslisten übersichtlich zu
-					organisieren, gemeinsam im Haushalt zu nutzen und beim
-					Einkauf immer den Überblick zu behalten.
+			<div class="hero-content">
+				<img
+					class="hero-brand-logo animate-in"
+					src="/grocy.png"
+					alt="Grocy"
+				/>
+				<h1 class="animate-in delay-1">
+					Schluss mit Zettelchaos beim Einkaufen.
+				</h1>
+				<p class="hero-text animate-in delay-2">
+					Gemeinsame Listen, klare Rollen und Rezepte — damit dein
+					Haushalt beim Einkauf den Überblick behält.
 				</p>
-
-				<div class="hero-actions">
-					<el-button
-						type="primary"
-						size="large"
-						round
+				<div class="hero-actions animate-in delay-3">
+					<router-link to="/register" class="btn-primary">
+						Jetzt loslegen
+					</router-link>
+					<button
+						type="button"
+						class="btn-ghost"
 						@click="scrollToFeatures"
 					>
 						Features ansehen
-					</el-button>
+					</button>
 				</div>
-			</div>
-
-			<div class="hero-visual">
-				<img :src="comicImage" alt="Grocy Comic Vorschau" />
 			</div>
 		</section>
 
-		<section ref="featuresSection" class="features-wrapper">
+		<section ref="featuresSection" class="features">
 			<div class="section-heading">
-				<el-tag type="primary" effect="plain" round>Features</el-tag>
-				<h2>Alles, was dein Haushalt für den Einkauf braucht.</h2>
+				<span class="section-tag">Features</span>
+				<h2>Alles für den Einkauf im Haushalt.</h2>
 				<p>
-					Von gemeinsamen Listen bis zu Rollen, Einladungen und
-					Rezepten: Grocy bringt Ordnung in den Einkaufsalltag.
+					Listen teilen, Rollen vergeben, Rezepte in den Einkauf
+					übernehmen — ohne Umwege.
 				</p>
 			</div>
 
-			<div class="feature-section">
-				<el-card
+			<div class="feature-grid">
+				<article
 					v-for="feature in features"
 					:key="feature.title"
-					shadow="never"
-					class="feature-card"
+					class="feature-item"
 				>
 					<div class="feature-icon">
-						<el-icon>
+						<el-icon :size="22">
 							<component :is="feature.icon" />
 						</el-icon>
 					</div>
 					<h3>{{ feature.title }}</h3>
 					<p>{{ feature.text }}</p>
-				</el-card>
+				</article>
 			</div>
 		</section>
 
-		<section class="cta-section">
-			<h2>Bereit für einen aufgeräumten Einkauf?</h2>
-			<p>
-				Öffne Grocy, teile Listen mit deinem Haushalt und vergiss das
-				Zettelchaos.
-			</p>
-			<el-button
-				type="primary"
-				size="large"
-				round
-				tag="router-link"
-				to="/register"
-			>
-				Jetzt loslegen
-			</el-button>
+		<section class="cta">
+			<div class="cta-inner">
+				<h2>Bereit für einen aufgeräumten Einkauf?</h2>
+				<p>
+					Öffne Grocy, teile Listen mit deinem Haushalt und vergiss
+					das Zettelchaos.
+				</p>
+				<router-link to="/register" class="btn-primary btn-primary--light">
+					Jetzt loslegen
+				</router-link>
+			</div>
 		</section>
 	</main>
 </template>
@@ -97,19 +106,19 @@
 import {
 	List,
 	User,
-	Switch,
 	Lock,
 	House,
 	Message,
 	Star,
-	Plus
+	Plus,
+	Share
 } from "@element-plus/icons-vue";
 import { ref } from "vue";
 
-import comicImage from "/public/grocy-comic.png";
-import grocyLogo from "/public/grocy.png";
+const comicImage = "/grocy-comic.png";
 
 const featuresSection = ref<HTMLElement | null>(null);
+const comicAvailable = ref(true);
 
 const scrollToFeatures = () => {
 	featuresSection.value?.scrollIntoView({
@@ -122,74 +131,60 @@ const features = [
 	{
 		icon: List,
 		title: "Einkaufslisten verwalten",
-		text: "Erstelle, bearbeite und lösche Einkaufslisten genau so, wie du sie im Alltag brauchst."
+		text: "Erstelle und bearbeite Listen genau so, wie du sie im Alltag brauchst."
 	},
 	{
-		icon: User,
-		title: "Mehrere Nutzer pro Haushalt",
-		text: "Organisiere Einkäufe gemeinsam mit allen Personen, die zu deinem Haushalt gehören."
-	},
-	{
-		icon: Switch,
-		title: "Gemeinsam nutzbare Listen",
-		text: "Listen können von mehreren Nutzern geöffnet und bearbeitet werden."
-	},
-	{
-		icon: Lock,
-		title: "Login & Rollen",
-		text: "Authentifizierung mit Rollen für Besitzer, Bearbeiter und Betrachter."
+		icon: Share,
+		title: "Gemeinsam einkaufen",
+		text: "Listen können von mehreren Personen im Haushalt geöffnet und bearbeitet werden."
 	},
 	{
 		icon: House,
-		title: "Aktiver Haushalt",
-		text: "Jeder Nutzer arbeitet immer im aktuell ausgewählten Haushalt."
+		title: "Haushalte & Rollen",
+		text: "Jeder arbeitet im aktiven Haushalt — mit klaren Rechten für Besitzer, Bearbeiter und Betrachter."
 	},
 	{
 		icon: Message,
 		title: "Einladungen",
-		text: "Lade andere Personen ein, um Listen gemeinsam anzusehen oder zu bearbeiten."
+		text: "Lade andere per Link ein, um Listen gemeinsam anzusehen oder zu bearbeiten."
 	},
 	{
 		icon: Plus,
-		title: "Rezepte erstellen",
-		text: "Erstelle eigene Rezepte, um Zutaten und Einkaufslisten noch smarter zu planen."
+		title: "Rezepte nutzen",
+		text: "Lege Rezepte an und übernimm Zutaten direkt in deine Einkaufsliste."
 	},
 	{
 		icon: Star,
-		title: "Default-Liste wählen",
-		text: "Lege eine Standardliste fest, damit du noch schneller mit dem Einkauf starten kannst."
+		title: "Standardliste",
+		text: "Lege eine Standardliste fest und starte schneller mit dem Einkauf."
+	},
+	{
+		icon: Lock,
+		title: "Sicherer Login",
+		text: "Accounts mit E-Mail-Bestätigung und Passwort-Zurücksetzen."
+	},
+	{
+		icon: User,
+		title: "Mehrere Nutzer",
+		text: "Organisiere Einkäufe gemeinsam mit allen, die zu deinem Haushalt gehören."
 	}
 ];
 </script>
 
 <style scoped>
-.landing-page {
+.landing {
 	min-height: 100vh;
-	background:
-		radial-gradient(
-			circle at top left,
-			rgba(59, 130, 246, 0.16),
-			transparent 32rem
-		),
-		linear-gradient(180deg, #f8fbff 0%, #eef5ff 46%, #f8fbff 100%);
-	color: #172033;
-}
-
-.hero-section,
-.features-wrapper,
-.feature-section,
-.cta-section {
-	width: min(1180px, calc(100% - 32px));
-	margin: 0 auto;
+	color: #0f172a;
+	background: #f4f7fc;
 }
 
 .topbar {
 	position: sticky;
 	top: 0;
 	z-index: 20;
-	width: 100%;
-	border-bottom: 1px solid rgba(148, 163, 184, 0.16);
-	background: rgba(255, 255, 255);
+	border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+	background: rgba(255, 255, 255, 0.86);
+	backdrop-filter: blur(12px);
 }
 
 .topbar-inner {
@@ -197,21 +192,35 @@ const features = [
 	align-items: center;
 	justify-content: space-between;
 	width: min(1180px, calc(100% - 32px));
-	height: 76px;
+	height: 68px;
 	margin: 0 auto;
+}
+
+.brand-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	text-decoration: none;
+}
+
+.topbar-logo {
+	display: block;
+	height: 36px;
+	width: auto;
+	max-width: 150px;
+	object-fit: contain;
 }
 
 .topbar-nav {
 	display: flex;
 	align-items: center;
-	gap: 22px;
+	gap: 18px;
 }
 
 .topbar-link {
-	color: #4b5563;
-	text-decoration: none;
-	font-size: 0.96rem;
+	color: #475569;
 	font-weight: 600;
+	text-decoration: none;
 	transition: color 0.2s ease;
 }
 
@@ -219,260 +228,373 @@ const features = [
 	color: #2563eb;
 }
 
-.topbar-link-primary {
-	color: #2563eb;
+.topbar-cta {
+	padding: 8px 14px;
+	border-radius: 9999px;
+	background: #2563eb;
+	color: #fff;
+	font-weight: 600;
+	text-decoration: none;
+	box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+	transition: background 0.2s ease, transform 0.2s ease;
 }
 
-/* old */
-.topbar-inner {
-	display: flex;
-	align-items: center;
-	width: min(1180px, calc(100% - 32px));
-	height: 76px;
-	margin: 0 auto;
+.topbar-cta:hover {
+	background: #1d4ed8;
+	transform: translateY(-1px);
 }
 
-.topbar-logo {
-	width: 150px;
-	object-fit: contain;
-}
-
-.hero-section {
+.hero {
+	position: relative;
 	display: grid;
-	grid-template-columns: 0.9fr 1.1fr;
-	align-items: center;
-	gap: 48px;
-	padding: 72px 0 64px;
+	min-height: calc(100vh - 68px);
+	align-items: end;
+	overflow: hidden;
 }
 
-.hero-copy h1 {
+.hero-media {
+	position: absolute;
+	inset: 0;
+}
+
+.hero-gradient {
+	position: absolute;
+	inset: 0;
+	background:
+		linear-gradient(
+			180deg,
+			rgba(15, 23, 42, 0.15) 0%,
+			rgba(15, 23, 42, 0.55) 55%,
+			rgba(15, 23, 42, 0.78) 100%
+		),
+		linear-gradient(135deg, #1d4ed8 0%, #3b82f6 45%, #93c5fd 100%);
+}
+
+.hero-pattern {
+	position: absolute;
+	inset: 0;
+	opacity: 0.18;
+	background-image: radial-gradient(
+		rgba(255, 255, 255, 0.45) 1px,
+		transparent 1px
+	);
+	background-size: 22px 22px;
+	animation: drift 28s linear infinite;
+}
+
+.hero-orb {
+	position: absolute;
+	border-radius: 9999px;
+	filter: blur(48px);
+	pointer-events: none;
+}
+
+.hero-orb-a {
+	top: 10%;
+	left: 8%;
+	width: 18rem;
+	height: 18rem;
+	background: rgba(255, 255, 255, 0.22);
+	animation: float-a 9s ease-in-out infinite;
+}
+
+.hero-orb-b {
+	right: 5%;
+	bottom: 20%;
+	width: 22rem;
+	height: 22rem;
+	background: rgba(147, 197, 253, 0.35);
+	animation: float-b 11s ease-in-out infinite;
+}
+
+.hero-img {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	opacity: 0.35;
+	mix-blend-mode: luminosity;
+}
+
+.hero-content {
+	position: relative;
+	z-index: 1;
+	width: min(720px, calc(100% - 32px));
+	margin: 0 auto 0 0;
+	padding: 72px 0 80px;
+	padding-left: max(16px, calc((100% - 1180px) / 2 + 16px));
+	color: #fff;
+}
+
+.hero-brand-logo {
+	display: block;
+	width: min(220px, 55vw);
+	height: auto;
+	margin: 0 0 18px;
+	filter: brightness(0) invert(1);
+}
+
+.hero-content h1 {
 	margin: 0;
-	max-width: 620px;
-	font-size: clamp(2.5rem, 6vw, 5.25rem);
-	line-height: 0.95;
-	letter-spacing: -0.07em;
+	max-width: 16ch;
+	font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+	font-size: clamp(1.7rem, 4vw, 2.75rem);
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	line-height: 1.2;
 }
 
 .hero-text {
-	max-width: 560px;
-	margin: 24px 0 0;
-	color: #526070;
-	font-size: 1.15rem;
-	line-height: 1.7;
+	max-width: 38rem;
+	margin: 18px 0 0;
+	font-size: 1.1rem;
+	line-height: 1.65;
+	color: rgba(255, 255, 255, 0.86);
 }
 
 .hero-actions {
 	display: flex;
 	flex-wrap: wrap;
+	gap: 12px;
+	margin-top: 28px;
+}
+
+.btn-primary,
+.btn-ghost {
+	display: inline-flex;
 	align-items: center;
-	gap: 14px;
-	margin-top: 34px;
-}
-
-.action-link {
+	justify-content: center;
+	min-width: 160px;
+	padding: 12px 20px;
+	border-radius: 9999px;
+	font-weight: 700;
 	text-decoration: none;
+	border: none;
+	cursor: pointer;
+	transition:
+		transform 0.2s ease,
+		background 0.2s ease,
+		box-shadow 0.2s ease;
 }
 
-.hero-actions .el-button {
-	min-width: 180px;
+.btn-primary {
+	background: #fff;
+	color: #1d4ed8;
+	box-shadow: 0 12px 28px rgba(15, 23, 42, 0.22);
 }
 
-.hero-actions .el-button--primary {
-	box-shadow: 0 10px 25px rgba(37, 99, 235, 0.22);
+.btn-primary:hover {
+	transform: translateY(-1px);
 }
 
-.hero-actions .el-button:not(.el-button--primary) {
-	border-color: rgba(59, 130, 246, 0.2);
-	color: #2563eb;
-	background: rgba(255, 255, 255, 0.82);
+.btn-primary--light {
+	background: #fff;
+	color: #1d4ed8;
 }
 
-.hero-actions .el-button:not(.el-button--primary):hover {
-	background: rgba(37, 99, 235, 0.06);
+.btn-ghost {
+	background: rgba(255, 255, 255, 0.12);
+	color: #fff;
+	border: 1px solid rgba(255, 255, 255, 0.28);
+	backdrop-filter: blur(6px);
 }
 
-/* old */
-.hero-actions {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 14px;
-	margin-top: 34px;
+.btn-ghost:hover {
+	background: rgba(255, 255, 255, 0.2);
 }
 
-.hero-visual {
-	position: relative;
-	padding: 12px;
-	border-radius: 34px;
-	background: rgba(255, 255, 255, 0.72);
-	box-shadow: 0 24px 70px rgba(37, 99, 235, 0.16);
-}
-
-.hero-visual::before {
-	content: "";
-	position: absolute;
-	inset: -18px;
-	z-index: -1;
-	border-radius: 46px;
-	background: linear-gradient(
-		135deg,
-		rgba(59, 130, 246, 0.24),
-		rgba(147, 197, 253, 0.05)
-	);
-	filter: blur(6px);
-}
-
-.hero-visual img {
-	display: block;
-	width: 100%;
-	aspect-ratio: 16 / 10;
-	object-fit: cover;
-	border-radius: 24px;
-}
-
-.features-wrapper {
-	padding: 42px 0;
+.features {
+	width: min(1180px, calc(100% - 32px));
+	margin: 0 auto;
+	padding: 72px 0 40px;
 }
 
 .section-heading {
-	max-width: 760px;
-	margin: 0 auto 34px;
+	max-width: 640px;
+	margin: 0 auto 36px;
 	text-align: center;
 }
 
+.section-tag {
+	display: inline-flex;
+	padding: 6px 12px;
+	border-radius: 9999px;
+	border: 1px solid rgba(37, 99, 235, 0.18);
+	background: #eff6ff;
+	color: #1d4ed8;
+	font-size: 0.8rem;
+	font-weight: 700;
+}
+
 .section-heading h2,
-.cta-section h2 {
-	margin: 16px 0 0;
-	font-size: clamp(2rem, 4vw, 3.5rem);
-	line-height: 1;
-	letter-spacing: -0.045em;
+.cta h2 {
+	margin: 14px 0 0;
+	font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+	font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+	font-weight: 700;
+	letter-spacing: -0.04em;
+	line-height: 1.2;
 }
 
 .section-heading p,
-.cta-section p {
-	margin: 18px auto 0;
+.cta p {
+	margin: 14px auto 0;
 	color: #64748b;
 	font-size: 1.05rem;
-	line-height: 1.7;
+	line-height: 1.65;
 }
 
-.feature-section {
+.feature-grid {
 	display: grid;
 	grid-template-columns: repeat(4, 1fr);
 	gap: 18px;
-	padding: 0;
 }
 
-.feature-card {
-	border-radius: 28px;
-	border-color: rgba(148, 163, 184, 0.22);
-	background: rgba(255, 255, 255, 0.76);
+.feature-item {
+	padding: 22px 20px;
+	border-radius: 1.35rem;
+	border: 1px solid rgba(15, 23, 42, 0.06);
+	background: rgba(255, 255, 255, 0.8);
+	box-shadow: 0 8px 24px rgba(37, 99, 235, 0.05);
+	transition:
+		transform 0.2s ease,
+		box-shadow 0.2s ease;
+}
+
+.feature-item:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 14px 32px rgba(37, 99, 235, 0.1);
 }
 
 .feature-icon {
 	display: grid;
 	place-items: center;
-	width: 52px;
-	height: 52px;
-	margin-bottom: 18px;
-	border-radius: 18px;
+	width: 48px;
+	height: 48px;
+	margin-bottom: 16px;
+	border-radius: 14px;
 	color: #2563eb;
 	background: linear-gradient(
 		135deg,
-		rgba(59, 130, 246, 0.16),
-		rgba(96, 165, 250, 0.1)
+		rgba(37, 99, 235, 0.14),
+		rgba(147, 197, 253, 0.18)
 	);
-	border: 1px solid rgba(59, 130, 246, 0.12);
-	font-size: 1.25rem;
-	font-weight: 700;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+	border: 1px solid rgba(37, 99, 235, 0.1);
 }
 
-.feature-card h3 {
+.feature-item h3 {
 	margin: 0;
-	font-size: 1.15rem;
+	font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+	font-size: 1.1rem;
 	letter-spacing: -0.02em;
 }
 
-.feature-card p {
-	margin: 10px 0 0;
+.feature-item p {
+	margin: 8px 0 0;
 	color: #64748b;
-	line-height: 1.6;
+	line-height: 1.55;
+	font-size: 0.95rem;
 }
 
-.cta-section {
-	margin-top: 24px;
-	margin-bottom: 70px;
-	padding: 58px 24px;
-	border-radius: 36px;
+.cta {
+	width: min(1180px, calc(100% - 32px));
+	margin: 24px auto 70px;
+}
+
+.cta-inner {
+	padding: 56px 24px;
+	border-radius: 2rem;
 	text-align: center;
+	color: #fff;
 	background: linear-gradient(135deg, #1d4ed8, #60a5fa);
-	color: #ffffff;
 	box-shadow: 0 22px 55px rgba(37, 99, 235, 0.22);
 }
 
-.cta-section p {
-	max-width: 620px;
-	color: rgba(255, 255, 255, 0.82);
+.cta p {
+	max-width: 560px;
+	color: rgba(255, 255, 255, 0.84);
 }
 
-.cta-section .el-button {
-	margin-top: 28px;
+.cta .btn-primary {
+	margin-top: 26px;
+}
+
+.animate-in {
+	opacity: 0;
+	transform: translateY(14px);
+	animation: rise 0.7s ease forwards;
+}
+
+.delay-1 {
+	animation-delay: 0.1s;
+}
+
+.delay-2 {
+	animation-delay: 0.2s;
+}
+
+.delay-3 {
+	animation-delay: 0.32s;
+}
+
+@keyframes rise {
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes float-a {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(20px);
+	}
+}
+
+@keyframes float-b {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-18px);
+	}
+}
+
+@keyframes drift {
+	from {
+		transform: translateY(0);
+	}
+	to {
+		transform: translateY(22px);
+	}
 }
 
 @media (max-width: 1100px) {
-	.feature-section {
-		grid-template-columns: repeat(3, 1fr);
-	}
-}
-
-@media (max-width: 920px) {
-	.hero-section {
-		grid-template-columns: 1fr;
-		padding-top: 56px;
-	}
-
-	.feature-section {
-		grid-template-columns: 1fr 1fr;
+	.feature-grid {
+		grid-template-columns: repeat(2, 1fr);
 	}
 }
 
 @media (max-width: 640px) {
-	.topbar-inner,
-	.hero-section,
-	.features-wrapper,
-	.feature-section,
-	.cta-section {
-		width: min(100% - 24px, 1180px);
+	.hero-content {
+		padding: 56px 16px 64px;
 	}
 
-	.hero-section {
-		gap: 30px;
-	}
-
-	.hero-copy h1 {
-		font-size: 3rem;
-	}
-
-	.feature-section {
+	.feature-grid {
 		grid-template-columns: 1fr;
-	}
-}
-
-@media (max-width: 420px) {
-	.topbar-logo {
-		width: 120px;
 	}
 
 	.topbar-nav {
-		gap: 12px;
+		gap: 10px;
 	}
 
 	.topbar-link {
-		font-size: 0.88rem;
-	}
-
-	.hero-copy h1 {
-		font-size: 2.55rem;
+		font-size: 0.9rem;
 	}
 }
 </style>

@@ -30,6 +30,7 @@ public class ItemEntity {
 
     private Double quantity;
     private String unitText;
+    private String brand;
     private UUID categoryId;
     private String notes;
     private UUID sourceRecipeId;
@@ -86,6 +87,10 @@ public class ItemEntity {
 
     public String getUnitText() {
         return unitText;
+    }
+
+    public String getBrand() {
+        return brand;
     }
 
     public UUID getCategoryId() {
@@ -152,6 +157,10 @@ public class ItemEntity {
 
     public void setUnitText(String unitText) {
         this.unitText = unitText;
+    }
+
+    public void setBrand(String brand) {
+        this.brand = brand;
     }
 
     public void setCategoryId(UUID categoryId) {

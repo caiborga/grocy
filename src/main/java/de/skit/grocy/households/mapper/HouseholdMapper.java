@@ -15,13 +15,15 @@ import de.skit.grocy.lists.dto.ListResponse;
 @Component
 public class HouseholdMapper {
 
-    public HouseholdResponse toDto(HouseholdEntity entity) {
+    public HouseholdResponse toDto(HouseholdEntity entity, int listCount, int recipeCount) {
         return new HouseholdResponse(
                 entity.getId(),
                 entity.getName(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                entity.getArchived());
+                entity.getArchived(),
+                listCount,
+                recipeCount);
     }
 
     public HouseholdDetailResponse toDetailDto(

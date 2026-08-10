@@ -52,7 +52,8 @@ public class ItemService {
         item.setHousehold(list.getHousehold());
         item.setCreatedBy(user);
         item.setQuantity(dto.quantity());
-        item.setUnitText(dto.unitText());
+        item.setUnitText(normalizeText(dto.unitText()));
+        item.setBrand(normalizeText(dto.brand()));
         item.setNotes(dto.notes());
 
         repository.save(item);
@@ -155,13 +156,16 @@ public class ItemService {
             changed = true;
         }
 
-        // 5. title patchen (wenn vorhanden → validieren)
+        // 5. title + Details patchen (Frontend sendet title immer mit Menge/Einheit/Marke)
         if (body.title() != null) {
             String trimmed = body.title().trim();
             if (trimmed.isEmpty()) {
                 throw new IllegalArgumentException("title must not be blank");
             }
             item.setTitle(trimmed);
+            item.setQuantity(body.quantity());
+            item.setUnitText(normalizeText(body.unitText()));
+            item.setBrand(normalizeText(body.brand()));
             changed = true;
         }
 
@@ -176,11 +180,19 @@ public class ItemService {
 
     private ListItem toDto(ItemEntity entity) {
         return new ListItem(entity.getId(), entity.getList().getId(), entity.getHousehold().getId(),
-                entity.getTitle(), entity.getQuantity(), entity.getUnitText(),
+                entity.getTitle(), entity.getQuantity(), entity.getUnitText(), entity.getBrand(),
                 entity.getCategoryId(), entity.isChecked(), entity.getNotes(),
                 entity.getSortIndex(), entity.getVersion(), entity.getCreatedBy().getId(),
                 entity.getCreatedAt(), entity.getUpdatedAt(), entity.getSourceRecipeId(),
                 entity.getSourceRecipeTitle());
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private void assertUserIsMemberOfHousehold(UserEntity user, HouseholdEntity household) {

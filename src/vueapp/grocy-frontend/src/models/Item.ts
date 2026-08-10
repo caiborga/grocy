@@ -1,8 +1,9 @@
 export interface Item {
 	title: string;
 	checked?: boolean;
-	quantity?: number;
-	unitText?: string;
+	quantity?: number | null;
+	unitText?: string | null;
+	brand?: string | null;
 	sourceRecipeId?: string;
 	sourceRecipeTitle?: string;
 }

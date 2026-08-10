@@ -8,6 +8,8 @@ export interface Household {
 	createdAt: Date;
 	updatedAt: Date;
 	archived: boolean;
-	members: User[];
-	lists: List[];
+	listCount?: number;
+	recipeCount?: number;
+	members?: User[];
+	lists?: List[];
 }

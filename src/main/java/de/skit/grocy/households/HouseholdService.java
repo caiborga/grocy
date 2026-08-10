@@ -20,6 +20,7 @@ import de.skit.grocy.lists.ListEntity;
 import de.skit.grocy.lists.ListRepository;
 import de.skit.grocy.lists.dto.Stats;
 import de.skit.grocy.lists.mapper.ListMapper;
+import de.skit.grocy.recipe.RecipeRepository;
 import de.skit.grocy.security.UserPrincipal;
 import de.skit.grocy.user.UserEntity;
 import de.skit.grocy.user.UserRepository;
@@ -31,6 +32,7 @@ public class HouseholdService {
     private final HouseholdMemberRepository householdMemberRepository;
     private final ListRepository listRepository;
     private final ItemRepository itemRepository;
+    private final RecipeRepository recipeRepository;
     private final HouseholdMapper householdMapper;
     private final HouseholdMemberMapper memberMapper;
     private final ListMapper listMapper;
@@ -41,6 +43,7 @@ public class HouseholdService {
             UserRepository userRepository,
             ListRepository listRepository,
             ItemRepository itemRepository,
+            RecipeRepository recipeRepository,
             HouseholdMapper householdMapper,
             HouseholdMemberMapper memberMapper,
             ListMapper listMapper) {
@@ -48,6 +51,7 @@ public class HouseholdService {
         this.householdMemberRepository = householdMemberRepository;
         this.listRepository = listRepository;
         this.itemRepository = itemRepository;
+        this.recipeRepository = recipeRepository;
         this.householdMapper = householdMapper;
         this.memberMapper = memberMapper;
         this.listMapper = listMapper;
@@ -56,15 +60,21 @@ public class HouseholdService {
     public List<HouseholdResponse> getAllHouseholds() {
         return householdRepository.findAll()
                 .stream()
-                .map(householdMapper::toDto)
+                .map(this::toResponse)
                 .toList();
     }
 
     public List<HouseholdResponse> getAllUserHouseholds(UserPrincipal principal) {
         return householdRepository.findDistinctByMembersUserId(principal.getUser().getId())
                 .stream()
-                .map(householdMapper::toDto)
+                .map(this::toResponse)
                 .toList();
+    }
+
+    private HouseholdResponse toResponse(HouseholdEntity household) {
+        int listCount = (int) listRepository.countByHouseholdIdAndArchivedFalse(household.getId());
+        int recipeCount = (int) recipeRepository.countByHouseholdId(household.getId());
+        return householdMapper.toDto(household, listCount, recipeCount);
     }
 
     @Transactional
@@ -98,7 +108,7 @@ public class HouseholdService {
         listRepository.save(defaultList);
 
         // Response
-        return householdMapper.toDto(saved);
+        return toResponse(saved);
     }
 
     public HouseholdDetailResponse getHousehold(UUID id, UserPrincipal principal) {
@@ -136,6 +146,6 @@ public class HouseholdService {
 
         HouseholdEntity updated = householdRepository.save(entity);
 
-        return householdMapper.toDto(updated);
+        return toResponse(updated);
     }
 }

@@ -10,6 +10,7 @@ public record ListItem(
         String title,
         Double quantity,
         String unitText,
+        String brand,
         UUID categoryId,
         boolean checked,
         String notes,

@@ -22,7 +22,6 @@ import JoinInvite from "@/pages/JoinInvite.vue";
 import NotFound from "@/pages/NotFound.vue";
 import RecipeListView from "@/pages/RecipeListView.vue";
 import RecipeFormView from "@/pages/RecipeFormView.vue";
-import RecipeDetailView from "@/pages/RecipeDetailView.vue";
 
 type AppRouteMeta = {
 	requiresAuth?: boolean;
@@ -98,7 +97,7 @@ const router = createRouter({
 		},
 		{
 			path: "/recipes/:id",
-			component: RecipeDetailView,
+			redirect: "/recipes",
 			meta: { requiresAuth: true } satisfies AppRouteMeta
 		},
 		{

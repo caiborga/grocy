@@ -1,15 +1,14 @@
 <template>
-    <div class="min-h-screen bg-gray-50">
-        <div class="max-w-5xl mx-auto p-4">
-            <!-- Header -->
-            <header class="bg-white rounded-2xl shadow-sm p-4 mb-4">
+    <div class="g-page">
+        <div class="g-page-inner space-y-4">
+            <header class="g-panel">
                 <div class="grid grid-cols-[1fr_auto] items-center gap-3">
                     <div>
-                        <h1 class="text-2xl font-bold leading-tight">
+                        <h1 class="g-page-title">
                             Haushalte
                         </h1>
 
-                        <p class="text-sm text-gray-500 mt-1">
+                        <p class="g-page-sub">
                             Verwalte Haushalte & Mitglieder
                         </p>
                     </div>
@@ -23,48 +22,70 @@
             </header>
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <!-- Households -->
-                <section class="md:col-span-1 bg-white rounded-2xl shadow-sm p-4">
+                <section class="g-panel md:col-span-1">
                     <div class="flex items-center justify-between gap-3 mb-4">
-                        <h2 class="text-lg font-bold">
+                        <h2 class="font-display text-lg font-bold text-ink">
                             Deine Haushalte
                         </h2>
 
-                        <el-tag size="large" type="success" round>
+                        <span class="g-chip g-chip-success">
                             {{ activeHouseholds.length }}
-                        </el-tag>
+                        </span>
                     </div>
 
-                    <div v-if="activeHouseholds.length === 0" class="text-center text-gray-500 py-10">
-                        <div class="text-lg font-semibold mb-1">
+                    <div v-if="activeHouseholds.length === 0" class="g-empty">
+                        <div class="g-empty-title">
                             Keine Haushalte
                         </div>
 
-                        <div class="text-sm">
+                        <div class="g-empty-text">
                             Erstelle oben rechts deinen ersten Haushalt.
                         </div>
                     </div>
 
-                    <el-menu v-else :default-active="selected?.id" class="household-menu space-y-2"
-                        @select="selectHouseholdById">
-                        <el-menu-item v-for="h in activeHouseholds" :key="h.id" :index="h.id"
-                            class="household-menu-item">
-                            <span class="truncate">
-                                {{ householdName(h) }}
-                            </span>
-                        </el-menu-item>
-                    </el-menu>
+                    <ul v-else class="household-list">
+                        <li v-for="h in activeHouseholds" :key="h.id">
+                            <button
+                                type="button"
+                                class="household-item"
+                                :class="{
+                                    'household-item--active': selected?.id === h.id
+                                }"
+                                @click="selectHouseholdById(h.id)"
+                            >
+                                <span class="household-avatar" aria-hidden="true">
+                                    <el-icon :size="18"><House /></el-icon>
+                                </span>
+
+                                <span class="household-copy">
+                                    <span class="household-item-title">
+                                        {{ householdName(h) }}
+                                    </span>
+                                    <span class="household-item-meta">
+                                        {{ householdMeta(h) }}
+                                    </span>
+                                </span>
+
+                                <span
+                                    v-if="selected?.id === h.id"
+                                    class="household-check"
+                                    aria-hidden="true"
+                                >
+                                    <el-icon :size="16"><Check /></el-icon>
+                                </span>
+                            </button>
+                        </li>
+                    </ul>
                 </section>
 
-                <!-- Details -->
-                <section class="md:col-span-2 bg-white rounded-2xl shadow-sm p-4">
+                <section class="g-panel md:col-span-2">
                     <div class="grid grid-cols-[1fr_auto] items-start gap-3 mb-4">
                         <div>
-                            <h2 class="text-xl font-bold leading-tight">
+                            <h2 class="font-display text-xl font-bold leading-snug text-ink pb-0.5">
                                 {{ selectedName }}
                             </h2>
 
-                            <p v-if="selected" class="text-sm text-gray-500 mt-1">
+                            <p v-if="selected" class="g-page-sub">
                                 Haushalt verwalten
                             </p>
                         </div>
@@ -87,8 +108,8 @@
                         </div>
                     </div>
 
-                    <div v-if="!selected" class="text-center text-gray-500 py-10">
-                        <div class="text-lg font-semibold mb-1">
+                    <div v-if="!selected" class="g-empty">
+                        <div class="g-empty-title">
                             Wähle links einen Haushalt
                         </div>
                     </div>
@@ -106,13 +127,13 @@
                                     </span>
                                 </template>
 
-                                <div v-if="lists.length === 0" class="text-center text-gray-500 py-10">
-                                    <div class="text-lg font-semibold mb-1">
+                                <div v-if="lists.length === 0" class="g-empty">
+                                    <div class="g-empty-title">
                                         Keine Listen
                                     </div>
 
-                                    <div class="text-sm">
-                                        Keine Listen in diesem Haushalt.
+                                    <div class="g-empty-text">
+                                        Noch keine Listen in diesem Haushalt.
                                     </div>
                                 </div>
 
@@ -122,17 +143,17 @@
                                         <div class="grid grid-cols-[1fr_auto] items-center gap-3">
                                             <div class="min-w-0">
                                                 <div class="flex items-center gap-2 min-w-0">
-                                                    <span class="font-semibold truncate text-gray-900">
+                                                    <span class="font-semibold truncate text-ink">
                                                         {{ l.title ?? 'Liste' }}
                                                     </span>
 
-                                                    <el-icon v-if="l.isDefault" :size="18" class="text-yellow-500"
-                                                        title="Default-Liste">
+                                                    <el-icon v-if="l.isDefault" :size="18" class="text-amber-500"
+                                                        title="Standardliste">
                                                         <StarFilled />
                                                     </el-icon>
                                                 </div>
 
-                                                <p v-if="l.stats" class="text-sm text-gray-500 mt-1">
+                                                <p v-if="l.stats" class="text-sm text-muted mt-1">
                                                     {{ l.stats.checked }} / {{ l.stats.total }} erledigt
                                                 </p>
                                             </div>
@@ -150,7 +171,7 @@
                                                             Bearbeiten
                                                         </el-dropdown-item>
 
-                                                        <el-dropdown-item class="text-red-500" :disabled="l.isDefault"
+                                                        <el-dropdown-item class="text-danger" :disabled="l.isDefault"
                                                             @click="confirmDeleteList(l)">
                                                             Löschen
                                                         </el-dropdown-item>
@@ -183,13 +204,13 @@
                                     </span>
                                 </template>
 
-                                <div v-if="members.length === 0" class="text-center text-gray-500 py-10">
-                                    <div class="text-lg font-semibold mb-1">
+                                <div v-if="members.length === 0" class="g-empty">
+                                    <div class="g-empty-title">
                                         Keine Mitglieder
                                     </div>
 
-                                    <div class="text-sm">
-                                        Keine Mitglieder gefunden.
+                                    <div class="g-empty-text">
+                                        Noch keine Mitglieder gefunden.
                                     </div>
                                 </div>
 
@@ -289,7 +310,7 @@
 
             <!-- Invite dialog -->
             <el-dialog v-model="openInvite" title="Mitglied hinzufügen" width="92%" class="max-w-[480px]" align-center>
-                <p class="text-sm text-gray-500 mb-3">
+                <p class="text-sm text-muted mb-3">
                     Erstelle einen Einladungslink. Der Link ist einmalig nutzbar und 2 Stunden gültig.
                 </p>
 
@@ -303,7 +324,7 @@
 
                     <el-form-item v-if="inviteUrl" label="Einladungslink">
                         <el-input v-model="inviteUrl" readonly size="large" />
-                        <p class="text-xs text-gray-500 mt-1">
+                        <p class="text-xs text-muted mt-1">
                             Gültig bis: {{ inviteExpiresAt }}
                         </p>
                     </el-form-item>
@@ -473,6 +494,17 @@ function householdName(household) {
     return household?.name ?? household?.title ?? "Haushalt";
 }
 
+function householdMeta(household) {
+    const listCount =
+        household?.listCount ?? household?.lists?.length ?? 0;
+    const recipeCount = household?.recipeCount ?? 0;
+    const listsLabel = listCount === 1 ? "1 Liste" : `${listCount} Listen`;
+    const recipesLabel =
+        recipeCount === 1 ? "1 Rezept" : `${recipeCount} Rezepte`;
+
+    return `${listsLabel} · ${recipesLabel}`;
+}
+
 function getActiveHouseholds(value) {
     return (value ?? []).filter((hh) => hh && !hh.archived);
 }
@@ -564,7 +596,7 @@ async function createHousehold() {
         ElMessage.success("Haushalt erstellt");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Erstellen fehlgeschlagen");
+        ElMessage.error("Haushalt konnte nicht erstellt werden. Bitte Namen prüfen und erneut versuchen.");
     } finally {
         createLoading.value = false;
         toggleLoading();
@@ -612,7 +644,7 @@ async function renameHousehold() {
         ElMessage.success("Umbenannt");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Umbenennen fehlgeschlagen");
+        ElMessage.error("Haushalt konnte nicht umbenannt werden. Bitte erneut versuchen.");
     } finally {
         renameLoading.value = false;
         toggleLoading();
@@ -662,7 +694,7 @@ async function deleteHousehold() {
         ElMessage.success("Gelöscht");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Löschen fehlgeschlagen");
+        ElMessage.error("Löschen fehlgeschlagen. Bitte erneut versuchen.");
     } finally {
         toggleLoading();
     }
@@ -685,7 +717,7 @@ async function createList() {
         ElMessage.success("Liste erstellt");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Liste konnte nicht erstellt werden");
+        ElMessage.error("Liste konnte nicht erstellt werden. Bitte Namen prüfen und erneut versuchen.");
     } finally {
         createListLoading.value = false;
         toggleLoading();
@@ -712,7 +744,7 @@ async function saveListEdit() {
         ElMessage.success("Liste gespeichert");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Speichern fehlgeschlagen");
+        ElMessage.error("Änderungen konnten nicht gespeichert werden. Bitte erneut versuchen.");
     } finally {
         editListLoading.value = false;
         toggleLoading();
@@ -742,7 +774,7 @@ async function confirmDeleteList(list) {
         ElMessage.success("Liste gelöscht");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Löschen fehlgeschlagen");
+        ElMessage.error("Löschen fehlgeschlagen. Bitte erneut versuchen.");
     } finally {
         toggleLoading();
     }
@@ -766,7 +798,7 @@ async function updateRole(row, newRole) {
     } catch (e) {
         console.error(e);
         row.role = oldRole;
-        ElMessage.error("Rolle konnte nicht gespeichert werden");
+        ElMessage.error("Rolle konnte nicht gespeichert werden. Prüfe deine Berechtigung.");
     } finally {
         toggleLoading();
     }
@@ -800,7 +832,7 @@ async function removeMember(row) {
     } catch (e) {
         console.error(e);
         members.value = before;
-        ElMessage.error("Entfernen fehlgeschlagen");
+        ElMessage.error("Mitglied konnte nicht entfernt werden. Bitte erneut versuchen.");
     } finally {
         toggleLoading();
     }
@@ -828,7 +860,7 @@ async function createInviteLink() {
         ElMessage.success("Einladungslink erstellt.");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Invite-Link konnte nicht erstellt werden.");
+        ElMessage.error("Einladungslink konnte nicht erstellt werden. Bitte erneut versuchen.");
     } finally {
         inviteLoading.value = false;
         toggleLoading();
@@ -841,7 +873,7 @@ async function copyInviteLink() {
         ElMessage.success("Link kopiert.");
     } catch (e) {
         console.error(e);
-        ElMessage.error("Kopieren nicht möglich.");
+        ElMessage.error("Kopieren nicht möglich. Bitte den Link manuell markieren und kopieren.");
     }
 }
 
@@ -862,12 +894,111 @@ function formatExpires(expiresAtIso) {
 </script>
 
 <style scoped>
-.household-menu {
-    border-right: 0;
+.household-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.household-menu :deep(.el-menu-item) {
-    border-radius: 0.75rem;
+.household-item {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 12px;
+    border: 1px solid rgba(15, 23, 42, 0.07);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+    text-align: left;
+    cursor: pointer;
+    transition:
+        background 0.15s ease,
+        border-color 0.15s ease,
+        box-shadow 0.15s ease,
+        transform 0.15s ease;
+}
+
+.household-item:hover {
+    border-color: #bfdbfe;
+    background: linear-gradient(180deg, #f8fbff 0%, #eff6ff 100%);
+    box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
+    transform: translateY(-1px);
+}
+
+.household-item--active {
+    border-color: #93c5fd;
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.12);
+}
+
+.household-avatar {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    color: #2563eb;
+    background: linear-gradient(
+        135deg,
+        rgba(37, 99, 235, 0.14),
+        rgba(147, 197, 253, 0.22)
+    );
+    border: 1px solid rgba(37, 99, 235, 0.12);
+}
+
+.household-item--active .household-avatar {
+    color: #fff;
+    background: linear-gradient(135deg, #2563eb, #60a5fa);
+    border-color: transparent;
+    box-shadow: 0 6px 14px rgba(37, 99, 235, 0.28);
+}
+
+.household-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.household-item-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: Figtree, ui-sans-serif, system-ui, sans-serif;
+    font-size: 0.98rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.3;
+    color: #0f172a;
+}
+
+.household-item--active .household-item-title {
+    color: #1d4ed8;
+}
+
+.household-item-meta {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #64748b;
+}
+
+.household-item--active .household-item-meta {
+    color: #3b82f6;
+}
+
+.household-check {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    color: #1d4ed8;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #bfdbfe;
 }
 
 .household-tabs {
@@ -876,18 +1007,13 @@ function formatExpires(expiresAtIso) {
 }
 
 .household-menu-item {
-    border: 1px solid rgb(243 244 246);
-    background-color: rgb(249 250 251);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    background-color: #f8fafc;
 }
 
 .household-menu-item:hover,
 .list-card:hover {
-    background-color: rgb(239 246 255);
-}
-
-.household-menu :deep(.el-menu-item.is-active) {
-    border-color: rgb(191 219 254);
-    background-color: rgba(219, 234, 254, 0.716);
+    background-color: #eff6ff;
 }
 
 .custom-tabs-label {
@@ -899,6 +1025,11 @@ function formatExpires(expiresAtIso) {
 .list-card {
     cursor: pointer;
     border-radius: 1rem;
-    transition: background-color 0.15s ease, border-color 0.15s ease;
+    border-color: rgba(15, 23, 42, 0.06);
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.list-card:hover {
+    box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
 }
 </style>

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { onBeforeRouteLeave, useRoute, useRouter } from "vue-router";
 import { Delete, Plus } from "@element-plus/icons-vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import { recipeService } from "@/services/recepieService";
 import type { RecipeCreate, RecipeIngredient } from "@/models/Recipe";
 import { useHouseholdStore } from "@/stores/householdStore";
@@ -33,6 +33,8 @@ const submitLabel = computed(() =>
 );
 const loading = ref(false);
 const saving = ref(false);
+const isDirty = ref(false);
+const savedSuccessfully = ref(false);
 
 const unitOptions = [
 	"g",
@@ -91,9 +93,19 @@ async function loadRecipe() {
 					sortIndex: index
 				}))
 			: [{ instruction: "", sortIndex: 0 }];
+	} catch (e) {
+		console.error(e);
+		ElMessage.error(
+			"Rezept konnte nicht geladen werden. Bitte zurück und erneut öffnen."
+		);
 	} finally {
 		loading.value = false;
+		isDirty.value = false;
 	}
+}
+
+function markDirty() {
+	isDirty.value = true;
 }
 
 function addIngredient() {
@@ -103,6 +115,7 @@ function addIngredient() {
 		unitText: "",
 		sortIndex: form.ingredients.length
 	});
+	markDirty();
 }
 
 function removeIngredient(index: number) {
@@ -110,6 +123,7 @@ function removeIngredient(index: number) {
 	form.ingredients.forEach((ingredient, i) => {
 		ingredient.sortIndex = i;
 	});
+	markDirty();
 }
 
 function addStep() {
@@ -117,6 +131,7 @@ function addStep() {
 		instruction: "",
 		sortIndex: form.steps.length
 	});
+	markDirty();
 }
 
 function removeStep(index: number) {
@@ -124,6 +139,7 @@ function removeStep(index: number) {
 	form.steps.forEach((step, i) => {
 		step.sortIndex = i;
 	});
+	markDirty();
 }
 
 function queryUnits(
@@ -141,19 +157,38 @@ function queryUnits(
 
 async function submit() {
 	if (!householdId.value) {
-		ElMessage.error("Kein Haushalt ausgewählt");
+		ElMessage.error(
+			"Kein Haushalt ausgewählt. Bitte zuerst einen Haushalt wählen."
+		);
 		return;
 	}
 
 	if (!form.title.trim()) {
-		ElMessage.error("Bitte gib einen Titel ein");
+		ElMessage.error("Bitte gib einen Titel ein.");
+		return;
+	}
+
+	const filledIngredients = form.ingredients.filter((ingredient) =>
+		ingredient.name.trim()
+	);
+	const filledSteps = form.steps.filter((step) =>
+		step.instruction.trim()
+	);
+
+	if (filledIngredients.length === 0) {
+		ElMessage.error("Bitte mindestens eine Zutat mit Namen angeben.");
+		return;
+	}
+
+	if (filledSteps.length === 0) {
+		ElMessage.error("Bitte mindestens einen Zubereitungsschritt angeben.");
 		return;
 	}
 
 	saving.value = true;
 
 	try {
-		const payload = normalizeRecipeForm();
+		const payload = normalizeRecipeForm(filledIngredients, filledSteps);
 		const response =
 			isEditMode.value && recipeId.value
 				? await recipeService.updateRecipe(
@@ -163,25 +198,86 @@ async function submit() {
 					)
 				: await recipeService.createRecipe(householdId.value, payload);
 
+		savedSuccessfully.value = true;
+		isDirty.value = false;
 		ElMessage.success(
 			isEditMode.value ? "Rezept gespeichert" : "Rezept erstellt"
 		);
-		router.push(`/recipes/${response.data.id}`);
+		router.push("/recipes");
+	} catch (e) {
+		console.error(e);
+		ElMessage.error(
+			"Speichern fehlgeschlagen. Bitte Eingaben prüfen und erneut versuchen."
+		);
 	} finally {
 		saving.value = false;
 	}
 }
 
-function normalizeRecipeForm(): RecipeCreate {
+function normalizeRecipeForm(
+	ingredients = form.ingredients.filter((ingredient) =>
+		ingredient.name.trim()
+	),
+	steps = form.steps.filter((step) => step.instruction.trim())
+): RecipeCreate {
 	return {
-		...form,
-		ingredients: form.ingredients.map((ingredient) => ({
+		title: form.title,
+		description: form.description,
+		baseServings: form.baseServings,
+		prepTimeMinutes: form.prepTimeMinutes,
+		ingredients: ingredients.map((ingredient, index) => ({
 			...ingredient,
+			sortIndex: index,
 			quantity: normalizeQuantity(ingredient.quantity),
 			unitText: normalizeUnitText(ingredient.unitText)
+		})),
+		steps: steps.map((step, index) => ({
+			...step,
+			sortIndex: index
 		}))
 	};
 }
+
+async function cancelForm() {
+	if (isDirty.value && !savedSuccessfully.value) {
+		try {
+			await ElMessageBox.confirm(
+				"Ungespeicherte Änderungen verwerfen?",
+				"Abbrechen",
+				{
+					confirmButtonText: "Verwerfen",
+					cancelButtonText: "Weiter bearbeiten",
+					type: "warning"
+				}
+			);
+		} catch {
+			return;
+		}
+	}
+
+	router.back();
+}
+
+onBeforeRouteLeave(async () => {
+	if (!isDirty.value || savedSuccessfully.value || saving.value) {
+		return true;
+	}
+
+	try {
+		await ElMessageBox.confirm(
+			"Ungespeicherte Änderungen verwerfen?",
+			"Seite verlassen",
+			{
+				confirmButtonText: "Verwerfen",
+				cancelButtonText: "Bleiben",
+				type: "warning"
+			}
+		);
+		return true;
+	} catch {
+		return false;
+	}
+});
 
 function normalizeQuantity(value: number | string | null | undefined) {
 	if (value === null || value === undefined || value === "") {
@@ -201,14 +297,16 @@ onMounted(loadRecipe);
 </script>
 
 <template>
-	<div class="min-h-screen bg-gray-50">
-		<div class="mx-auto max-w-5xl p-4" v-loading="loading">
-			<header class="mb-4 rounded-2xl bg-white p-4 shadow-sm">
+	<div class="g-page">
+		<div class="g-page-inner space-y-4" v-loading="loading">
+			<header class="g-panel">
 				<div class="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
 					<div class="min-w-0">
-						<p class="text-sm text-gray-500">{{ pageEyebrow }}</p>
+						<p class="text-sm font-semibold text-primary">
+							{{ pageEyebrow }}
+						</p>
 
-						<h1 class="mt-1 truncate text-2xl font-bold leading-tight text-gray-900">
+						<h1 class="g-page-title mt-1 truncate">
 							{{ pageTitle }}
 						</h1>
 					</div>
@@ -217,7 +315,7 @@ onMounted(loadRecipe);
 						circle
 						plain
 						title="Zurück"
-						@click="router.back()"
+						@click="cancelForm"
 					>
 						<el-icon :size="18">
 							<ArrowLeft />
@@ -226,14 +324,15 @@ onMounted(loadRecipe);
 				</div>
 			</header>
 
-			<section class="rounded-2xl bg-white p-4 shadow-sm">
-				<el-form label-position="top">
+			<section class="g-panel">
+				<el-form label-position="top" @input="markDirty">
 				<div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_140px_170px]">
 					<el-form-item label="Titel" class="!mb-2">
 						<el-input
 							v-model="form.title"
 							size="default"
 							placeholder="z. B. Spaghetti Carbonara"
+							@input="markDirty"
 						/>
 					</el-form-item>
 
@@ -244,6 +343,7 @@ onMounted(loadRecipe);
 							size="default"
 							class="!w-full"
 							controls-position="right"
+							@change="markDirty"
 						/>
 					</el-form-item>
 
@@ -254,6 +354,7 @@ onMounted(loadRecipe);
 							size="default"
 							class="!w-full"
 							controls-position="right"
+							@change="markDirty"
 						/>
 					</el-form-item>
 				</div>
@@ -263,30 +364,28 @@ onMounted(loadRecipe);
 						v-model="form.description"
 						type="textarea"
 						:rows="2"
-						placeholder="Kurze Beschreibung..."
+						placeholder="Kurze Beschreibung…"
+						@input="markDirty"
 					/>
 				</el-form-item>
 
 				<el-divider />
 
-				<div class="mb-3 flex items-center justify-between">
-					<h2 class="text-lg font-semibold text-gray-900">Zutaten</h2>
-
-					<el-button :icon="Plus" round @click="addIngredient">
-						Zutat
-					</el-button>
-				</div>
+				<h2 class="mb-3 font-display text-lg font-semibold text-ink">
+					Zutaten
+				</h2>
 
 				<div class="space-y-3">
 					<div
 						v-for="(ingredient, index) in form.ingredients"
 						:key="index"
-						class="grid gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3 sm:grid-cols-[minmax(0,1fr)_110px_130px_auto]"
+						class="grid gap-2 rounded-xl border border-border bg-slate-50 p-3 sm:grid-cols-[minmax(0,1fr)_110px_130px_auto]"
 					>
 						<el-input
 							v-model="ingredient.name"
 							placeholder="Name"
 							class="sm:col-auto"
+							@input="markDirty"
 						/>
 
 						<el-input
@@ -296,6 +395,7 @@ onMounted(loadRecipe);
 							placeholder="Menge"
 							clearable
 							class="!w-full"
+							@input="markDirty"
 						/>
 
 						<el-autocomplete
@@ -304,6 +404,7 @@ onMounted(loadRecipe);
 							placeholder="Einheit"
 							clearable
 							class="!w-full"
+							@input="markDirty"
 						/>
 
 						<el-button
@@ -312,31 +413,35 @@ onMounted(loadRecipe);
 							text
 							type="danger"
 							class="justify-self-end sm:justify-self-auto"
+							title="Zutat entfernen"
 							@click="removeIngredient(index)"
 						/>
 					</div>
+
+					<el-button
+						:icon="Plus"
+						round
+						class="w-full sm:w-auto"
+						@click="addIngredient"
+					>
+						Zutat hinzufügen
+					</el-button>
 				</div>
 
 				<el-divider />
 
-				<div class="mb-3 flex items-center justify-between">
-					<h2 class="text-lg font-semibold text-gray-900">
-						Zubereitung
-					</h2>
-
-					<el-button :icon="Plus" round @click="addStep">
-						Schritt
-					</el-button>
-				</div>
+				<h2 class="mb-3 font-display text-lg font-semibold text-ink">
+					Zubereitung
+				</h2>
 
 				<div class="space-y-3">
 					<div
 						v-for="(step, index) in form.steps"
 						:key="index"
-						class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-2 rounded-xl border border-gray-100 bg-gray-50 p-3"
+						class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-2 rounded-xl border border-border bg-slate-50 p-3"
 					>
 						<div
-							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700"
+							class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary-soft text-sm font-semibold text-primary-deep"
 						>
 							{{ index + 1 }}
 						</div>
@@ -346,6 +451,7 @@ onMounted(loadRecipe);
 							type="textarea"
 							:rows="2"
 							placeholder="Was passiert in diesem Schritt?"
+							@input="markDirty"
 						/>
 
 						<el-button
@@ -354,20 +460,31 @@ onMounted(loadRecipe);
 							text
 							type="danger"
 							class="!ml-0"
+							title="Schritt entfernen"
 							@click="removeStep(index)"
 						/>
 					</div>
+
+					<el-button
+						:icon="Plus"
+						round
+						class="w-full sm:w-auto"
+						@click="addStep"
+					>
+						Schritt hinzufügen
+					</el-button>
 				</div>
 
 				<div class="mt-6 flex justify-end gap-2">
-					<el-button round @click="router.back()"
-						>Abbrechen</el-button
-					>
+					<el-button round @click="cancelForm">
+						Abbrechen
+					</el-button>
 
 					<el-button
 						type="primary"
 						round
 						:loading="saving"
+						:disabled="saving"
 						@click="submit"
 					>
 						{{ submitLabel }}

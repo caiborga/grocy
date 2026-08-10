@@ -7,6 +7,7 @@ public record ItemCreate(
         @NotBlank String title,
         Double quantity,
         String unitText,
+        String brand,
         UUID categoryId,
         String notes) {
 }

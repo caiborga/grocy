@@ -8,5 +8,7 @@ public record HouseholdResponse(
         String name,
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
-        Boolean archived) {
+        Boolean archived,
+        int listCount,
+        int recipeCount) {
 }

@@ -17,5 +17,7 @@ public interface ListRepository extends JpaRepository<ListEntity, UUID> {
     Optional<ListEntity> findByHouseholdAndIsDefaultTrue(HouseholdEntity household);
 
     Optional<ListEntity> findByHouseholdIdAndIsDefaultTrue(UUID householdId);
+
+    long countByHouseholdIdAndArchivedFalse(UUID householdId);
 }
 
