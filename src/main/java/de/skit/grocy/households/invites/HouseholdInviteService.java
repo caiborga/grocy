@@ -1,11 +1,7 @@
 package de.skit.grocy.households.invites;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.OffsetDateTime;
-import java.util.Base64;
-import java.util.HexFormat;
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
@@ -18,17 +14,20 @@ import de.skit.grocy.households.HouseholdEntity;
 import de.skit.grocy.households.HouseholdRepository;
 import de.skit.grocy.households.invites.dto.HouseholdInviteCreateRequest;
 import de.skit.grocy.households.invites.dto.HouseholdInviteCreatedResponse;
+import de.skit.grocy.households.invites.dto.HouseholdInviteListResponse;
 import de.skit.grocy.households.invites.dto.HouseholdInvitePreviewResponse;
 import de.skit.grocy.households.invites.enums.InviteStatus;
 import de.skit.grocy.households.member.HouseholdMemberEntity;
 import de.skit.grocy.households.member.HouseholdMemberRepository;
 import de.skit.grocy.households.member.HouseholdMemberService;
+import de.skit.grocy.common.enums.Permission;
+import de.skit.grocy.security.HouseholdAuthorizationService;
+import de.skit.grocy.security.UserPrincipal;
+import de.skit.grocy.security.crypto.TokenHashes;
 
 @Service
 public class HouseholdInviteService {
 
-    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final int TOKEN_BYTES = 32; // 256-bit
     private static final int DEFAULT_MAX_USES = 1;
     private static final int DEFAULT_EXPIRES_HOURS = 2;
 
@@ -36,16 +35,19 @@ public class HouseholdInviteService {
     private final HouseholdRepository householdRepository;
     private final HouseholdMemberRepository memberRepository;
     private final HouseholdMemberService householdMemberService;
+    private final HouseholdAuthorizationService householdAuth;
 
     public HouseholdInviteService(
             HouseholdInviteRepository inviteRepository,
             HouseholdRepository householdRepository,
             HouseholdMemberRepository memberRepository,
-            HouseholdMemberService householdMemberService) {
+            HouseholdMemberService householdMemberService,
+            HouseholdAuthorizationService householdAuth) {
         this.inviteRepository = inviteRepository;
         this.householdRepository = householdRepository;
         this.memberRepository = memberRepository;
         this.householdMemberService = householdMemberService;
+        this.householdAuth = householdAuth;
     }
 
     /**
@@ -86,7 +88,7 @@ public class HouseholdInviteService {
 
         // 3) Token generieren + Hash speichern
         String token = generateToken();
-        String tokenHash = sha256Hex(token);
+        String tokenHash = TokenHashes.sha256Hex(token);
 
         HouseholdInviteEntity invite = new HouseholdInviteEntity();
         invite.setHouseholdId(household.getId());
@@ -112,24 +114,22 @@ public class HouseholdInviteService {
      * GET /invites/{token}
      */
     public HouseholdInvitePreviewResponse getInvitePreview(String token) {
-        String tokenHash = sha256Hex(token);
+        String tokenHash = TokenHashes.sha256Hex(token);
 
         HouseholdInviteEntity invite = inviteRepository.findByTokenHash(tokenHash)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found"));
 
-        // Status aus "now" ableiten (optional: auch in DB persistieren)
         if (invite.getStatus() == InviteStatus.PENDING && invite.isExpired()) {
-            // optional: DB updaten
             invite.setStatus(InviteStatus.EXPIRED);
             inviteRepository.save(invite);
         }
 
-        if (invite.getStatus() == InviteStatus.REVOKED) {
+        if (invite.getStatus() != InviteStatus.PENDING || !invite.isUsable()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found");
         }
 
         HouseholdEntity household = householdRepository.findById(invite.getHouseholdId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Household not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found"));
 
         HouseholdInvitePreviewResponse resp = new HouseholdInvitePreviewResponse();
         resp.setHouseholdId(household.getId());
@@ -149,7 +149,7 @@ public class HouseholdInviteService {
      */
     @Transactional
     public void acceptInvite(String token, UUID currentUserId) {
-        String tokenHash = sha256Hex(token);
+        String tokenHash = TokenHashes.sha256Hex(token);
 
         HouseholdInviteEntity invite = inviteRepository.findForUpdateByTokenHash(tokenHash)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found"));
@@ -175,7 +175,10 @@ public class HouseholdInviteService {
 
         UUID householdId = invite.getHouseholdId();
 
-        // membership über bestehenden Service
+        if (memberRepository.existsByHouseholdIdAndUserId(householdId, currentUserId)) {
+            return;
+        }
+
         householdMemberService.addUserToHouseholdIfNotExists(
                 householdId,
                 currentUserId,
@@ -186,23 +189,39 @@ public class HouseholdInviteService {
         inviteRepository.save(invite);
     }
 
+    @Transactional(readOnly = true)
+    public List<HouseholdInviteListResponse> listInvites(UUID householdId, UserPrincipal principal) {
+        householdAuth.require(householdId, principal.getUser(), Permission.MEMBER_INVITE);
+        return inviteRepository.findByHouseholdIdOrderByCreatedAtDesc(householdId).stream()
+                .map(invite -> new HouseholdInviteListResponse(
+                        invite.getId(),
+                        invite.getRole(),
+                        invite.getStatus(),
+                        invite.getExpiresAt(),
+                        invite.getUses(),
+                        invite.getMaxUses(),
+                        invite.getCreatedAt()))
+                .toList();
+    }
+
+    @Transactional
+    public void revokeInvite(UUID householdId, UUID inviteId, UserPrincipal principal) {
+        householdAuth.require(householdId, principal.getUser(), Permission.MEMBER_INVITE);
+        HouseholdInviteEntity invite = inviteRepository.findById(inviteId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found"));
+        if (!householdId.equals(invite.getHouseholdId())) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Invite not found");
+        }
+        if (invite.getStatus() == InviteStatus.PENDING) {
+            invite.setStatus(InviteStatus.REVOKED);
+            inviteRepository.save(invite);
+        }
+    }
+
     // ----------------- helpers -----------------
 
     private static String generateToken() {
-        byte[] bytes = new byte[TOKEN_BYTES];
-        SECURE_RANDOM.nextBytes(bytes);
-        // URL-safe, ohne Padding (=)
-        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
-    }
-
-    private static String sha256Hex(String input) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] digest = md.digest(input.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(digest);
-        } catch (Exception e) {
-            throw new IllegalStateException("Unable to hash token", e);
-        }
+        return TokenHashes.randomUrlToken();
     }
 
     private static String buildJoinUrl(String baseUrl, String token) {

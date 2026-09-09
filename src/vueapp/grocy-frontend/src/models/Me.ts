@@ -8,4 +8,5 @@ export interface Me {
 	updatedAt: Date;
 	activeHouseholdId: string;
 	role: Role;
+	platformAdmin?: boolean;
 }

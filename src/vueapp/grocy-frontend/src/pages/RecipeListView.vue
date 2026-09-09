@@ -7,9 +7,12 @@ import { recipeService } from "@/services/recepieService";
 import type { List } from "@/models/List";
 import type { Recipe } from "@/models/Recipe";
 import { useHouseholdStore } from "@/stores/householdStore";
+import { usePermissions } from "@/composables/permissionComp";
+import { PERM } from "@/auth/perms";
 
 const router = useRouter();
 const householdStore = useHouseholdStore();
+const { can } = usePermissions();
 
 const loading = ref(false);
 const loadError = ref("");
@@ -229,6 +232,7 @@ onMounted(loadRecipes);
 					</div>
 
 					<el-button
+						v-if="can(PERM.RECIPE_EDIT)"
 						type="primary"
 						circle
 						size="large"

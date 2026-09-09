@@ -12,5 +12,13 @@ export const userService = {
 
 	setActiveHousehold(householdId: string) {
 		return api.patch(`/me/active-household/${householdId}`);
+	},
+
+	exportData() {
+		return api.get("/me/export");
+	},
+
+	deleteAccount() {
+		return api.delete("/me");
 	}
 };

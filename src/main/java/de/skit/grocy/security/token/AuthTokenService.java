@@ -56,6 +56,17 @@ public class AuthTokenService {
         return entity.getUser();
     }
 
+    @Transactional
+    public void invalidateUnused(UserEntity user, AuthTokenType type) {
+        tokenRepository.findByUserAndTypeAndUsedAtIsNull(user, type)
+                .forEach(token -> token.setUsedAt(OffsetDateTime.now()));
+    }
+
+    @Transactional
+    public void deleteAllForUser(UserEntity user) {
+        tokenRepository.deleteByUser(user);
+    }
+
     private String generateRawToken() {
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);

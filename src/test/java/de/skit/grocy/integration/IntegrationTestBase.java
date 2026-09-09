@@ -4,21 +4,26 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
 import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import de.skit.grocy.user.UserRepository;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @Transactional
 public abstract class IntegrationTestBase {
 
@@ -31,8 +36,12 @@ public abstract class IntegrationTestBase {
     @Autowired
     protected UserRepository userRepository;
 
-    protected String registerAndLogin(String email) throws Exception {
+    @BeforeEach
+    void resetRateLimitsNotNeeded() {
+        // Rate limiting is disabled in the test profile.
+    }
 
+    protected String registerAndLogin(String email) throws Exception {
         mockMvc.perform(post("/api/auth/register")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -48,7 +57,7 @@ public abstract class IntegrationTestBase {
                 .ifPresent(user -> {
                     user.setEmailVerified(true);
                     user.setEmailVerifiedAt(OffsetDateTime.now());
-                    userRepository.save(user);
+                    userRepository.saveAndFlush(user);
                 });
 
         String loginResponse =
@@ -68,6 +77,16 @@ public abstract class IntegrationTestBase {
         return JsonPath.read(loginResponse, "$.accessToken");
     }
 
+    protected UUID defaultHouseholdId(String token) throws Exception {
+        String response = mockMvc.perform(get("/api/households")
+                .header("Authorization", "Bearer " + token))
+            .andExpect(status().isOk())
+            .andReturn()
+            .getResponse()
+            .getContentAsString();
+        return UUID.fromString(JsonPath.read(response, "$[0].id"));
+    }
+
     protected String createHousehold(String token, String name) throws Exception {
         String response =
             mockMvc.perform(post("/api/households")
@@ -76,7 +95,7 @@ public abstract class IntegrationTestBase {
                     .content("""
                         { "name": "%s" }
                     """.formatted(name)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();
@@ -90,9 +109,9 @@ public abstract class IntegrationTestBase {
                     .header("Authorization", "Bearer " + token)
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                        { "name": "%s" }
-                    """.formatted(name)))
-                .andExpect(status().isCreated())
+                        { "title": "%s", "householdId": "%s", "isDefault": false }
+                    """.formatted(name, householdId)))
+                .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()
                 .getContentAsString();

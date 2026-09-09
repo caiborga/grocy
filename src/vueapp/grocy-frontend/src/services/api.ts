@@ -41,10 +41,7 @@ api.interceptors.response.use(
 			return Promise.reject(error);
 		}
 
-		if (
-			(status === 401 || status === 403) &&
-			!window.location.pathname.startsWith("/login")
-		) {
+		if (status === 401 && !window.location.pathname.startsWith("/login")) {
 			localStorage.removeItem(ACCESS_TOKEN_KEY);
 
 			const redirect = window.location.pathname + window.location.search;

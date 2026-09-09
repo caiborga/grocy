@@ -25,7 +25,17 @@ public class VueResourceResolver extends PathResourceResolver {
             @NonNull ResourceResolverChain chain) {
 
         Resource resource = super.resolveResourceInternal(request, requestPath, locations, chain);
+        if (isApiOrHealth(requestPath)) {
+            return resource;
+        }
         return resource != null ? resource : indexHtml;
+    }
+
+    private boolean isApiOrHealth(String requestPath) {
+        return requestPath.equals("health")
+                || requestPath.startsWith("health/")
+                || requestPath.equals("api")
+                || requestPath.startsWith("api/");
     }
 
 }

@@ -45,6 +45,10 @@ public class UserEntity {
 
     private OffsetDateTime lockedUntil;
 
+    private OffsetDateTime credentialsValidFrom;
+
+    private OffsetDateTime deletedAt;
+
     @OneToMany(mappedBy = "user")
     private List<HouseholdMemberEntity> households = new ArrayList<>();
 
@@ -116,6 +120,14 @@ public class UserEntity {
         return lockedUntil;
     }
 
+    public OffsetDateTime getCredentialsValidFrom() {
+        return credentialsValidFrom;
+    }
+
+    public OffsetDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
     // ---------- Setter ----------
 
     public void setEmail(String email) {
@@ -156,5 +168,13 @@ public class UserEntity {
 
     public void setLockedUntil(OffsetDateTime lockedUntil) {
         this.lockedUntil = lockedUntil;
+    }
+
+    public void setCredentialsValidFrom(OffsetDateTime credentialsValidFrom) {
+        this.credentialsValidFrom = credentialsValidFrom;
+    }
+
+    public void setDeletedAt(OffsetDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

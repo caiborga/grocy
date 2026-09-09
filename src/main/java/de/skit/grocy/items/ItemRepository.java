@@ -43,4 +43,6 @@ public interface ItemRepository extends JpaRepository<ItemEntity, UUID> {
     int deleteCheckedItemsOlderThan(
         @Param("cutoff") OffsetDateTime cutoff
     );
+
+    void deleteByHouseholdId(UUID householdId);
 }

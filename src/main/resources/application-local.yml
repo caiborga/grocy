@@ -1,0 +1,10 @@
+spring:
+    config:
+        import: optional:file:.env[.properties]
+    datasource:
+        url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:3300/grocy}
+        username: ${SPRING_DATASOURCE_USERNAME:grocy_admin}
+        password: ${SPRING_DATASOURCE_PASSWORD}
+app:
+    jwt:
+        secret: ${JWT_SECRET}

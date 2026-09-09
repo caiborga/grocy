@@ -22,6 +22,10 @@ import JoinInvite from "@/pages/JoinInvite.vue";
 import NotFound from "@/pages/NotFound.vue";
 import RecipeListView from "@/pages/RecipeListView.vue";
 import RecipeFormView from "@/pages/RecipeFormView.vue";
+import Settings from "@/pages/Settings.vue";
+import Impressum from "@/pages/Impressum.vue";
+import Datenschutz from "@/pages/Datenschutz.vue";
+import AdminStats from "@/pages/AdminStats.vue";
 
 type AppRouteMeta = {
 	requiresAuth?: boolean;
@@ -71,6 +75,14 @@ const router = createRouter({
 			component: JoinInvite
 		},
 		{
+			path: "/impressum",
+			component: Impressum
+		},
+		{
+			path: "/datenschutz",
+			component: Datenschutz
+		},
+		{
 			path: "/lists/:id?",
 			component: List,
 			meta: { requiresAuth: true } satisfies AppRouteMeta
@@ -78,6 +90,16 @@ const router = createRouter({
 		{
 			path: "/households",
 			component: HouseHolds,
+			meta: { requiresAuth: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/settings",
+			component: Settings,
+			meta: { requiresAuth: true } satisfies AppRouteMeta
+		},
+		{
+			path: "/admin/stats",
+			component: AdminStats,
 			meta: { requiresAuth: true } satisfies AppRouteMeta
 		},
 		{

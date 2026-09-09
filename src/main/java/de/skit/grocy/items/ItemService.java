@@ -12,6 +12,8 @@ import de.skit.grocy.items.dto.ListItem;
 import de.skit.grocy.lists.ItemSort;
 import de.skit.grocy.lists.ListEntity;
 import de.skit.grocy.lists.ListRepository;
+import de.skit.grocy.common.enums.Permission;
+import de.skit.grocy.security.HouseholdAuthorizationService;
 import de.skit.grocy.security.UserPrincipal;
 import de.skit.grocy.user.UserEntity;
 import jakarta.transaction.Transactional;
@@ -31,14 +33,17 @@ public class ItemService {
     private final ListRepository listRepository;
     private final HouseholdMemberRepository householdMemberRepository;
     private final ListActivityService listActivityService;
+    private final HouseholdAuthorizationService householdAuth;
 
     public ItemService(ItemRepository repository, ListRepository listRepository,
             HouseholdMemberRepository householdMemberRepository,
-            ListActivityService listActivityService) {
+            ListActivityService listActivityService,
+            HouseholdAuthorizationService householdAuth) {
         this.repository = repository;
         this.listRepository = listRepository;
         this.householdMemberRepository = householdMemberRepository;
         this.listActivityService = listActivityService;
+        this.householdAuth = householdAuth;
     }
 
     @Transactional
@@ -49,7 +54,7 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new NotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(user, list.getHousehold());
+        householdAuth.require(list.getHousehold().getId(), user, Permission.ITEM_RENAME);
 
         ItemEntity item = new ItemEntity();
         item.setTitle(dto.title());
@@ -81,7 +86,7 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.LIST_READ);
 
         String normalizedFilter = (filter == null) ? "all" : filter.toLowerCase();
 
@@ -102,7 +107,7 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.LIST_READ);
 
         return repository.findByIdAndList(itemId, list).map(this::toDto);
     }
@@ -113,7 +118,7 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.ITEM_DELETE);
 
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
@@ -141,7 +146,7 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.ITEM_DELETE);
 
         int deleted = repository.deleteByListAndCheckedTrue(list);
 
@@ -165,7 +170,7 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.ITEM_TOGGLE);
 
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
@@ -190,7 +195,13 @@ public class ItemService {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new EntityNotFoundException("List not found"));
 
-        assertUserIsMemberOfHousehold(principal.getUser(), list.getHousehold());
+        householdAuth.requireMember(list.getHousehold().getId(), principal.getUser());
+        if (body.title() != null) {
+            householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.ITEM_RENAME);
+        }
+        if (body.checked() != null) {
+            householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.ITEM_TOGGLE);
+        }
 
         ItemEntity item = repository.findByIdAndList(itemId, list)
                 .orElseThrow(() -> new EntityNotFoundException("Item not found"));
@@ -259,14 +270,5 @@ public class ItemService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    private void assertUserIsMemberOfHousehold(UserEntity user, HouseholdEntity household) {
-
-        boolean isMember = householdMemberRepository.existsByUserAndHousehold(user, household);
-
-        if (!isMember) {
-            throw new AccessDeniedException("User is not a member of this household");
-        }
     }
 }

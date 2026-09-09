@@ -3,6 +3,7 @@ package de.skit.grocy.common.enums;
 public enum Permission {
     HOUSEHOLD_RENAME,
     HOUSEHOLD_DELETE,
+    HOUSEHOLD_TRANSFER,
     MEMBER_INVITE,
     MEMBER_ROLE_CHANGE,
     MEMBER_DELETE,
@@ -11,5 +12,8 @@ public enum Permission {
     LIST_READ,
     ITEM_TOGGLE,
     ITEM_RENAME,
-    ITEM_DELETE
+    ITEM_DELETE,
+    RECIPE_READ,
+    RECIPE_EDIT,
+    ACTIVITY_READ
 }

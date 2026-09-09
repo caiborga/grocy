@@ -56,13 +56,17 @@ export const useUserStore = defineStore("user", () => {
 	}
 
 	async function logout() {
-		token.value = null;
-		me.value = null;
-		localStorage.removeItem(ACCESS_TOKEN_KEY);
+		try {
+			await authService.logout();
+		} finally {
+			token.value = null;
+			me.value = null;
+			localStorage.removeItem(ACCESS_TOKEN_KEY);
 
-		const householdStore = useHouseholdStore();
-		householdStore.activeHousehold = null;
-		householdStore.activeHouseholdId = null;
+			const householdStore = useHouseholdStore();
+			householdStore.activeHousehold = null;
+			householdStore.activeHouseholdId = null;
+		}
 	}
 
 	async function setActiveHousehold(householdId: string) {

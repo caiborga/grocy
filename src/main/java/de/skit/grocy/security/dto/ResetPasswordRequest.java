@@ -7,7 +7,7 @@ public record ResetPasswordRequest(
         @NotBlank(message = "Token darf nicht leer sein")
         String token,
 
-        @Size(min = 8, message = "Passwort muss mindestens 8 Zeichen lang sein")
+        @Size(min = 8, max = 72, message = "Passwort muss zwischen 8 und 72 Zeichen lang sein")
         @NotBlank(message = "Passwort darf nicht leer sein")
         String password) {
 }

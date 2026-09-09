@@ -236,11 +236,29 @@
                                         </template>
                                     </el-table-column>
 
-                                    <el-table-column v-if="can(PERM.MEMBER_DELETE)" label="" width="50" align="center">
+                                    <el-table-column v-if="can(PERM.HOUSEHOLD_TRANSFER) || can(PERM.MEMBER_DELETE)" label="" width="96" align="center">
                                         <template #default="{ row }">
-                                            <el-button circle plain size="small" title="Mitglied entfernen"
-                                                :disabled="!can(PERM.MEMBER_DELETE) || userIsOwner(row.role)"
-                                                @click="removeMember(row)">
+                                            <el-button
+                                                v-if="can(PERM.HOUSEHOLD_TRANSFER) && !userIsOwner(row.role)"
+                                                circle
+                                                plain
+                                                size="small"
+                                                title="Eigentum übertragen"
+                                                @click="transferOwnership(row)"
+                                            >
+                                                <el-icon>
+                                                    <StarFilled />
+                                                </el-icon>
+                                            </el-button>
+                                            <el-button
+                                                v-if="can(PERM.MEMBER_DELETE)"
+                                                circle
+                                                plain
+                                                size="small"
+                                                title="Mitglied entfernen"
+                                                :disabled="userIsOwner(row.role)"
+                                                @click="removeMember(row)"
+                                            >
                                                 <el-icon class="text-red-500">
                                                     <Delete />
                                                 </el-icon>
@@ -799,6 +817,36 @@ async function updateRole(row, newRole) {
         console.error(e);
         row.role = oldRole;
         ElMessage.error("Rolle konnte nicht gespeichert werden. Prüfe deine Berechtigung.");
+    } finally {
+        toggleLoading();
+    }
+}
+
+async function transferOwnership(row) {
+    if (!selected.value?.id || !row?.userId) return;
+
+    try {
+        await ElMessageBox.confirm(
+            `Eigentum an ${row.displayName ?? "dieses Mitglied"} übertragen? Du wirst Bearbeiter.`,
+            "Eigentum übertragen",
+            {
+                confirmButtonText: "Übertragen",
+                cancelButtonText: "Abbrechen",
+                type: "warning"
+            }
+        );
+    } catch {
+        return;
+    }
+
+    toggleLoading();
+    try {
+        await householdService.transferOwnership(selected.value.id, row.userId);
+        await getHousehold(selected.value);
+        ElMessage.success("Eigentum übertragen");
+    } catch (e) {
+        console.error(e);
+        ElMessage.error("Eigentum konnte nicht übertragen werden.");
     } finally {
         toggleLoading();
     }

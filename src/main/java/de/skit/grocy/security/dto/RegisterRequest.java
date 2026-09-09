@@ -12,7 +12,7 @@ public record RegisterRequest(
         @NotBlank(message = "Email darf nicht leer sein")
         String email,
 
-        @Size(min = 8, message = "Passwort muss mindestens 8 Zeichen lang sein")
+        @Size(min = 8, max = 72, message = "Passwort muss zwischen 8 und 72 Zeichen lang sein")
         @NotBlank(message = "Passwort darf nicht leer sein")
         String password) {
 }

@@ -3,7 +3,13 @@
 		title="Account erstellen"
 		subtitle="In wenigen Schritten startklar für deinen Haushalt."
 	>
+		<p v-if="!registrationEnabled" class="text-muted mb-4">
+			Die öffentliche Registrierung ist derzeit deaktiviert.
+			Bestehende Konten können sich weiterhin anmelden. Neue Mitglieder
+			kommen über eine Haushaltseinladung dazu.
+		</p>
 		<el-form
+			v-else
 			:model="form"
 			:rules="rules"
 			ref="formRef"
@@ -73,11 +79,17 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { ElMessage, ElLoading } from "element-plus";
 import { useRouter, useRoute } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import AuthLayout from "@/components/AuthLayout.vue";
+import { usePublicConfig } from "@/services/publicConfig";
+
+const { registrationEnabled, loadPublicConfig } = usePublicConfig();
+onMounted(() => {
+	loadPublicConfig();
+});
 
 const router = useRouter();
 const route = useRoute();
@@ -155,9 +167,15 @@ function submit() {
 			});
 		} catch (e) {
 			console.error(e);
-			ElMessage.error(
-				"Registrierung fehlgeschlagen. Bitte später erneut versuchen."
-			);
+			if (e?.response?.status === 403) {
+				ElMessage.error(
+					"Registrierung ist derzeit nicht möglich."
+				);
+			} else {
+				ElMessage.error(
+					"Registrierung fehlgeschlagen. Bitte später erneut versuchen."
+				);
+			}
 		} finally {
 			loader.close();
 			loading.value = false;

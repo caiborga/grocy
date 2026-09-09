@@ -3,6 +3,7 @@ import type { Role } from "@/models/Role";
 export const PERM = {
 	HOUSEHOLD_RENAME: "household:rename",
 	HOUSEHOLD_DELETE: "household:delete",
+	HOUSEHOLD_TRANSFER: "household:transfer",
 	MEMBER_INVITE: "member:invite",
 	MEMBER_ROLE_CHANGE: "member:role_change",
 	MEMBER_DELETE: "member:delete",
@@ -11,7 +12,9 @@ export const PERM = {
 	LIST_EDIT: "list:edit",
 	ITEM_TOGGLE: "item:toggle",
 	ITEM_RENAME: "item:rename",
-	ITEM_DELETE: "item:delete"
+	ITEM_DELETE: "item:delete",
+	RECIPE_READ: "recipe:read",
+	RECIPE_EDIT: "recipe:edit"
 } as const;
 
 export type Permission = (typeof PERM)[keyof typeof PERM];
@@ -20,6 +23,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 	OWNER: [
 		PERM.HOUSEHOLD_RENAME,
 		PERM.HOUSEHOLD_DELETE,
+		PERM.HOUSEHOLD_TRANSFER,
 		PERM.MEMBER_INVITE,
 		PERM.MEMBER_ROLE_CHANGE,
 		PERM.MEMBER_DELETE,
@@ -28,7 +32,9 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 		PERM.ITEM_TOGGLE,
 		PERM.ITEM_RENAME,
 		PERM.ITEM_DELETE,
-		PERM.LIST_READ
+		PERM.LIST_READ,
+		PERM.RECIPE_READ,
+		PERM.RECIPE_EDIT
 	],
 	EDITOR: [
 		PERM.LIST_CREATE,
@@ -36,9 +42,11 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 		PERM.ITEM_TOGGLE,
 		PERM.ITEM_RENAME,
 		PERM.ITEM_DELETE,
-		PERM.LIST_READ
+		PERM.LIST_READ,
+		PERM.RECIPE_READ,
+		PERM.RECIPE_EDIT
 	],
-	VIEWER: [PERM.LIST_READ]
+	VIEWER: [PERM.LIST_READ, PERM.RECIPE_READ]
 };
 
 export function permissionsForRole(

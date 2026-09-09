@@ -1,6 +1,7 @@
 package de.skit.grocy.households.invites;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,4 +40,10 @@ public interface HouseholdInviteRepository extends JpaRepository<HouseholdInvite
             @Param("pendingStatus") InviteStatus pendingStatus,
             @Param("revokedStatus") InviteStatus revokedStatus,
             @Param("now") OffsetDateTime now);
+
+    List<HouseholdInviteEntity> findByHouseholdIdOrderByCreatedAtDesc(UUID householdId);
+
+    void deleteByHouseholdId(UUID householdId);
+
+    long countByStatusAndExpiresAtAfter(InviteStatus status, OffsetDateTime expiresAtAfter);
 }

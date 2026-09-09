@@ -87,8 +87,16 @@
 					</div>
 
 					<div v-if="me?.name" class="user-block" :title="me?.email">
-						<span class="user-name">{{ me.name }}</span>
+						<RouterLink to="/settings" class="user-name">{{ me.name }}</RouterLink>
 					</div>
+
+					<RouterLink
+						v-if="me?.platformAdmin"
+						to="/admin/stats"
+						class="nav-pill"
+					>
+						Statistik
+					</RouterLink>
 
 					<button class="logout-btn" type="button" @click="logout">
 						Abmelden
@@ -239,6 +247,7 @@ import { useHouseholdStore } from "@/stores/householdStore";
 import { useUserStore } from "@/stores/userStore";
 import { useActivityStore } from "@/stores/activityStore";
 import { ACCESS_TOKEN_KEY } from "@/constants/auth";
+import { authService } from "@/services/authService";
 import { Role } from "@/models/Role";
 
 const route = useRoute();
@@ -260,13 +269,15 @@ const showNav = computed(() => !!route.meta.requiresAuth);
 const navItems = [
 	{ label: "Liste", to: "/lists" },
 	{ label: "Haushalte", to: "/households" },
-	{ label: "Rezepte", to: "/recipes" }
+	{ label: "Rezepte", to: "/recipes" },
+	{ label: "Konto", to: "/settings" }
 ];
 
 const navItemsMobile = [
 	{ label: "Liste", to: "/lists", icon: "List" },
 	{ label: "Haushalte", to: "/households", icon: "House" },
-	{ label: "Rezepte", to: "/recipes", icon: "Dish" }
+	{ label: "Rezepte", to: "/recipes", icon: "Dish" },
+	{ label: "Konto", to: "/settings", icon: "User" }
 ];
 
 const roleLabel = computed(() => {
@@ -377,9 +388,12 @@ function formatRelative(iso) {
 
 async function logout() {
 	try {
+		await authService.logout();
+	} catch {
+		// Client-Logout auch bei bereits ungültiger Sitzung
+	} finally {
 		localStorage.removeItem(ACCESS_TOKEN_KEY);
 		activityStore.reset();
-	} finally {
 		router.push("/login");
 		ElMessage.success("Bis bald!");
 	}
@@ -560,6 +574,11 @@ async function logout() {
 	font-size: 0.8rem;
 	font-weight: 500;
 	color: #64748b;
+	text-decoration: none;
+}
+
+.user-name:hover {
+	color: #1d4ed8;
 }
 
 .desktop-nav {

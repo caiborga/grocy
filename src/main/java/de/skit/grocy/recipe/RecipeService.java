@@ -20,7 +20,9 @@ import de.skit.grocy.recipe.ingredient.IngredientEntity;
 import de.skit.grocy.recipe.ingredient.dto.RecipeIngredient;
 import de.skit.grocy.recipe.step.StepEntity;
 import de.skit.grocy.recipe.step.dto.RecipeStep;
+import de.skit.grocy.security.HouseholdAuthorizationService;
 import de.skit.grocy.security.UserPrincipal;
+import de.skit.grocy.common.enums.Permission;
 import de.skit.grocy.user.UserEntity;
 import jakarta.transaction.Transactional;
 
@@ -32,25 +34,29 @@ public class RecipeService {
     private final ListRepository listRepository;
     private final ItemRepository itemRepository;
     private final ListActivityService listActivityService;
+    private final HouseholdAuthorizationService householdAuth;
 
     public RecipeService(HouseholdRepository householdRepository,
             RecipeRepository recipeRepository,
             ListRepository listRepository,
             ItemRepository itemRepository,
-            ListActivityService listActivityService) {
+            ListActivityService listActivityService,
+            HouseholdAuthorizationService householdAuth) {
         this.householdRepository = householdRepository;
         this.recipeRepository = recipeRepository;
         this.listRepository = listRepository;
         this.itemRepository = itemRepository;
         this.listActivityService = listActivityService;
+        this.householdAuth = householdAuth;
     }
 
     @Transactional
     public Recipe createRecipe(UUID householdId, RecipeCreate dto, UserPrincipal principal) {
 
         UserEntity user = principal.getUser();
+        householdAuth.require(householdId, user, Permission.RECIPE_EDIT);
         HouseholdEntity household = householdRepository.findById(householdId)
-                .orElseThrow(() -> new NotFoundException("Household not found"));
+                .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
 
         RecipeEntity recipe = new RecipeEntity();
 
@@ -86,6 +92,7 @@ public class RecipeService {
     }
 
     public List<Recipe> getRecipes(UUID householdId, String sort, UserPrincipal principal) {
+        householdAuth.require(householdId, principal.getUser(), Permission.RECIPE_READ);
 
         householdRepository.findById(householdId)
                 .orElseThrow(() -> new EntityNotFoundException("Household not found"));
@@ -96,6 +103,7 @@ public class RecipeService {
     }
 
     public Recipe getRecipe(UUID householdId, UUID recipeId, UserPrincipal principal) {
+        householdAuth.require(householdId, principal.getUser(), Permission.RECIPE_READ);
         householdRepository.findById(householdId)
                 .orElseThrow(() -> new EntityNotFoundException("Household not found"));
 
@@ -109,6 +117,7 @@ public class RecipeService {
     public Recipe updateRecipe(UUID householdId, UUID recipeId, RecipeCreate dto,
             UserPrincipal principal) {
 
+        householdAuth.require(householdId, principal.getUser(), Permission.RECIPE_EDIT);
         householdRepository.findById(householdId)
                 .orElseThrow(() -> new EntityNotFoundException("Household not found"));
 
@@ -145,6 +154,7 @@ public class RecipeService {
 
     @Transactional
     public void deleteRecipe(UUID householdId, UUID recipeId, UserPrincipal principal) {
+        householdAuth.require(householdId, principal.getUser(), Permission.RECIPE_EDIT);
         RecipeEntity recipe = recipeRepository.findByIdAndHouseholdId(recipeId, householdId)
                 .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
 
@@ -155,6 +165,7 @@ public class RecipeService {
     public int addToList(UUID householdId, UUID recipeId, RecipeAddToList dto,
             UserPrincipal principal) {
 
+        householdAuth.require(householdId, principal.getUser(), Permission.RECIPE_EDIT);
         RecipeEntity recipe = recipeRepository.findByIdAndHouseholdId(recipeId, householdId)
                 .orElseThrow(() -> new EntityNotFoundException("Recipe not found"));
 

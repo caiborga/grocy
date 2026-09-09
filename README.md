@@ -49,13 +49,7 @@ cd backend
 ./mvnw spring-boot:run
 ```
 
-Required environment variables (example):
-
-```env
-SPRING_DATASOURCE_URL=jdbc:postgresql://HOST:5432/db
-SPRING_DATASOURCE_USERNAME=user
-SPRING_DATASOURCE_PASSWORD=password
-```
+Copy `.env.example` to `.env` and replace every `CHANGE_ME`. `.env` is gitignored.
 
 ### Run Frontend
 
@@ -72,7 +66,10 @@ The frontend runs on `http://localhost:5173` and proxies API requests to `/api`.
 * Services encapsulate API logic
 * Stores (Pinia) manage global application state
 * Backend exposes a REST API under `/api`
-* Authentication via JWT stored in local storage
+* Authentication via JWT; the token is stored in the browser and sent as `Authorization: Bearer`
+* Production notes: `docs/PRODUCTION_CHECKLIST.md`, `docs/TOMS.md`, `docs/DATA_PROCESSING_INVENTORY.md`
+
+Placeholders only: `.env.example`. Do not put real passwords or JWT values into versioned files.
 
 ## Roadmap / Ideas
 

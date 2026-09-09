@@ -1,0 +1,25 @@
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: create-drop
+
+app:
+  jwt:
+    # Test-only placeholder, not a production secret. Length satisfies HMAC-SHA256.
+    secret: test-only-placeholder-not-a-real-secret
+  frontend-url: http://localhost:8080
+  mail:
+    enabled: false
+  registration:
+    enabled: true
+  admin:
+    emails: admin@grocy.test
+  rate-limit:
+    enabled: false
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false

@@ -5,19 +5,48 @@ spring:
     jpa:
         hibernate:
             ddl-auto: update
-        show-sql: true
+        show-sql: false
+        open-in-view: true
         properties:
             hibernate:
-                format_sql: true
+                format_sql: false
+
+    servlet:
+        multipart:
+            max-file-size: 1MB
+            max-request-size: 1MB
+
+    codec:
+        max-in-memory-size: 1MB
 
 server:
-   port: ${PORT:8080}
-   address: 0.0.0.0
+    port: ${PORT:8080}
+    address: 0.0.0.0
+    tomcat:
+        max-http-form-post-size: 1MB
+        max-swallow-size: 1MB
+    error:
+        include-stacktrace: never
+        include-message: never
+        include-binding-errors: never
+
+springdoc:
+    api-docs:
+        enabled: ${SPRINGDOC_ENABLED:false}
+    swagger-ui:
+        enabled: ${SPRINGDOC_ENABLED:false}
 
 app:
-   jwt:
-      secret: ${JWT_SECRET:dev-only-secret-key-for-local-tests-123456}
-   frontend-url: ${APP_FRONTEND_URL:http://localhost:8080}
-   mail:
-      from: ${APP_MAIL_FROM:noreply@grocy.local}
-      enabled: ${APP_MAIL_ENABLED:false}
+    jwt:
+        secret: ${JWT_SECRET}
+        expiration-ms: ${JWT_EXPIRATION_MS:604800000}
+    frontend-url: ${APP_FRONTEND_URL:http://localhost:8080}
+    mail:
+        from: ${APP_MAIL_FROM:noreply@grocy.local}
+        enabled: ${APP_MAIL_ENABLED:false}
+    registration:
+        enabled: ${APP_REGISTRATION_ENABLED:true}
+    admin:
+        emails: ${APP_ADMIN_EMAILS:}
+    rate-limit:
+        enabled: ${APP_RATE_LIMIT_ENABLED:true}

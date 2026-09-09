@@ -5,8 +5,8 @@ import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import de.skit.grocy.common.enums.Role;
 import de.skit.grocy.common.exceptions.NotFoundException;
-import de.skit.grocy.households.member.HouseholdMemberEntity;
 import de.skit.grocy.households.member.HouseholdMemberRepository;
 import de.skit.grocy.security.dto.MeResponse;
 import de.skit.grocy.user.UserEntity;
@@ -17,21 +17,28 @@ public class MeService {
 
     private final HouseholdMemberRepository householdMemberRepository;
     private final UserRepository userRepository;
+    private final PlatformAdminService platformAdminService;
 
     public MeService(
             HouseholdMemberRepository householdMemberRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            PlatformAdminService platformAdminService) {
         this.householdMemberRepository = householdMemberRepository;
         this.userRepository = userRepository;
+        this.platformAdminService = platformAdminService;
     }
 
     public MeResponse getMe(UserPrincipal principal) {
         UserEntity user = principal.getUser();
         UUID householdId = user.getActiveHouseholdId();
-        HouseholdMemberEntity member = householdMemberRepository
-                .findByHouseholdIdAndUserId(householdId, user.getId())
-                .orElseThrow(() -> new NotFoundException("User is not member of household"));
-        
+        Role role = null;
+        if (householdId != null) {
+            role = householdMemberRepository
+                    .findByHouseholdIdAndUserId(householdId, user.getId())
+                    .map(member -> member.getRole())
+                    .orElse(null);
+        }
+
         return new MeResponse(
                 user.getId(),
                 user.getName(),
@@ -39,7 +46,8 @@ public class MeService {
                 user.getCreatedAt(),
                 user.getUpdatedAt(),
                 user.getActiveHouseholdId(),
-                member.getRole()
+                role,
+                platformAdminService.isAdmin(user)
             );
     }
 
@@ -51,7 +59,7 @@ public class MeService {
                 .existsByHouseholdIdAndUserId(householdId, user.getId());
 
         if (!isMember) {
-            throw new NotFoundException("Household " + householdId + " not found");
+            throw new NotFoundException("Nicht gefunden");
         }
 
         user.setActiveHouseholdId(householdId);

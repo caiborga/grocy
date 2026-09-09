@@ -1,0 +1,25 @@
+# Vorlage ohne Secrets. Nach .env.example eine .env anlegen, dann:
+#   copy docker-compose.example.yml docker-compose.yml
+#   docker compose up -d
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: grocy-db
+    restart: unless-stopped
+    # Nur für lokale Entwicklung. In Produktion den Port nicht veröffentlichen.
+    ports:
+      - "3300:5432"
+    environment:
+      POSTGRES_DB: grocy
+      POSTGRES_USER: grocy_admin
+      POSTGRES_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Set SPRING_DATASOURCE_PASSWORD in .env}
+    volumes:
+      - grocy_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grocy_admin -d grocy"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  grocy_pg_data:

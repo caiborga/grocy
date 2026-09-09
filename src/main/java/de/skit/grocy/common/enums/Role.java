@@ -6,17 +6,11 @@ public enum Role {
     EDITOR,
     VIEWER;
 
-    /**
-     * Darf Mitglieder einladen?
-     */
     public boolean canInvite() {
         return this == OWNER;
     }
 
-    /**
-     * Darf Haushalt administrieren?
-     */
-    public boolean isAdmin() {
-        return this == EDITOR;
+    public boolean isOwner() {
+        return this == OWNER;
     }
 }

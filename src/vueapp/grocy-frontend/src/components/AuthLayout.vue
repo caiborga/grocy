@@ -18,11 +18,14 @@
 			</div>
 
 			<p v-if="footerHint" class="auth-hint">{{ footerHint }}</p>
+			<LegalFooter />
 		</div>
 	</div>
 </template>
 
 <script setup>
+import LegalFooter from "@/components/LegalFooter.vue";
+
 defineProps({
 	title: { type: String, default: "" },
 	subtitle: { type: String, default: "" },

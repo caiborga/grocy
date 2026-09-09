@@ -51,7 +51,7 @@
 
 		</el-form>
 
-		<div class="mt-6 text-center text-sm">
+		<div v-if="registrationEnabled" class="mt-6 text-center text-sm">
 			<span class="text-muted">Noch keinen Account?</span>
 			<router-link
 				:to="{
@@ -69,11 +69,17 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { useRouter, useRoute } from "vue-router";
 import { useUserStore } from "@/stores/userStore";
 import AuthLayout from "@/components/AuthLayout.vue";
+import { usePublicConfig } from "@/services/publicConfig";
+
+const { registrationEnabled, loadPublicConfig } = usePublicConfig();
+onMounted(() => {
+	loadPublicConfig();
+});
 
 const router = useRouter();
 const route = useRoute();

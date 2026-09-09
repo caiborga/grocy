@@ -15,7 +15,13 @@ public interface HouseholdMemberRepository extends JpaRepository<HouseholdMember
 
     List<HouseholdMemberEntity> findByUserId(UUID userId);
 
+    long countByHouseholdId(UUID householdId);
+
     void deleteByHouseholdIdAndUserId(UUID householdId, UUID userId);
+
+    void deleteByHouseholdId(UUID householdId);
+
+    void deleteByUserId(UUID userId);
 
     boolean existsByHouseholdIdAndUserId(UUID householdId, UUID userId);
 

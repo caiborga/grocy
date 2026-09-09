@@ -22,6 +22,10 @@ export const householdService = {
 		return api.patch(`/households/${householdId}`, payload);
 	},
 
+	transferOwnership(householdId: string, userId: string) {
+		return api.post(`/households/${householdId}/transfer-ownership`, { userId });
+	},
+
     createList(householdId: string, payload: { name: string }) {
 		return api.post(`/households/${householdId}/lists`, payload);
 	}

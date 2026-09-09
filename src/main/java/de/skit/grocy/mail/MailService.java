@@ -34,7 +34,7 @@ public class MailService {
 
     private void send(String to, String subject, String text) {
         if (!mailProperties.isEnabled()) {
-            log.info("Mail sending disabled. Would send '{}' to {} with body:\n{}", subject, to, text);
+            log.info("Mail sending disabled. Skipped outbound mail.");
             return;
         }
 
@@ -51,7 +51,8 @@ public class MailService {
         try {
             mailSender.send(message);
         } catch (MailException ex) {
-            throw new IllegalStateException("Could not send mail '" + subject + "' to " + to, ex);
+            log.warn("Outbound mail failed");
+            throw new IllegalStateException("Could not send mail", ex);
         }
     }
 }

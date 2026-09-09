@@ -12,5 +12,6 @@ public record MeResponse(
         OffsetDateTime createdAt,
         OffsetDateTime updatedAt,
         UUID activeHouseholdId,
-        Role role
+        Role role,
+        boolean platformAdmin
 ) {}

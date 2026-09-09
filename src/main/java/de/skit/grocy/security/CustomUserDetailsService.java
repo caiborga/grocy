@@ -24,6 +24,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         UserEntity user = userRepository
                 .findByEmail(normalizedEmail)
+                .filter(candidate -> candidate.getDeletedAt() == null)
                 .orElseThrow(() ->
                         new UsernameNotFoundException("User not found"));
 

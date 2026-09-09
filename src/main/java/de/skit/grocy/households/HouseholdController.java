@@ -51,7 +51,10 @@ class HouseholdController {
     }
 
     @PatchMapping("/{id}")
-    public HouseholdResponse updateHousehold(@PathVariable UUID id, @RequestBody HouseholdUpdate dto) {
-        return service.updateHousehold(id, dto);
+    public HouseholdResponse updateHousehold(
+            @PathVariable UUID id,
+            @RequestBody HouseholdUpdate dto,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return service.updateHousehold(id, dto, principal);
     }
 }

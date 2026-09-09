@@ -11,4 +11,6 @@ public interface RecipeRepository extends JpaRepository<RecipeEntity, UUID> {
     Optional<RecipeEntity> findByIdAndHouseholdId(UUID id, UUID householdId);
 
     long countByHouseholdId(UUID householdId);
+
+    void deleteByHouseholdId(UUID householdId);
 }

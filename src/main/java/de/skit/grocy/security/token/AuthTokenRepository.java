@@ -12,4 +12,6 @@ public interface AuthTokenRepository extends JpaRepository<AuthTokenEntity, UUID
     Optional<AuthTokenEntity> findByTokenHashAndType(String tokenHash, AuthTokenType type);
 
     List<AuthTokenEntity> findByUserAndTypeAndUsedAtIsNull(UserEntity user, AuthTokenType type);
+
+    void deleteByUser(UserEntity user);
 }

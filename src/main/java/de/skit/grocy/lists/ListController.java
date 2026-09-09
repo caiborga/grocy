@@ -35,8 +35,8 @@ class ListController {
     }
 
     @GetMapping("/lists")
-    List<ListResponse> all() {
-        return service.getAllLists();
+    List<ListResponse> all(@AuthenticationPrincipal UserPrincipal principal) {
+        return service.getAllLists(principal);
     }
 
     @PostMapping("/households/{householdId}/lists")
@@ -60,13 +60,18 @@ class ListController {
     }
 
     @PatchMapping("/lists/{id}")
-    public ListResponse updateList(@PathVariable UUID id, @RequestBody ListUpdate dto) {
-        return service.update(id, dto);
+    public ListResponse updateList(
+            @PathVariable UUID id,
+            @RequestBody ListUpdate dto,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return service.update(id, dto, principal);
     }
 
     @DeleteMapping("/lists/{id}")
-    void deleteList(@PathVariable UUID id) {
-        service.deleteList(id);
+    void deleteList(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        service.deleteList(id, principal);
     }
 
 }

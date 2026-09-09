@@ -15,6 +15,8 @@ import de.skit.grocy.households.HouseholdEntity;
 import de.skit.grocy.households.HouseholdRepository;
 import de.skit.grocy.households.member.HouseholdMemberRepository;
 import de.skit.grocy.lists.ListEntity;
+import de.skit.grocy.common.enums.Permission;
+import de.skit.grocy.security.HouseholdAuthorizationService;
 import de.skit.grocy.security.UserPrincipal;
 import de.skit.grocy.user.UserEntity;
 import jakarta.transaction.Transactional;
@@ -29,16 +31,19 @@ public class ListActivityService {
     private final ActivityReadStateRepository readStateRepository;
     private final HouseholdRepository householdRepository;
     private final HouseholdMemberRepository householdMemberRepository;
+    private final HouseholdAuthorizationService householdAuth;
 
     public ListActivityService(
             ListActivityEventRepository eventRepository,
             ActivityReadStateRepository readStateRepository,
             HouseholdRepository householdRepository,
-            HouseholdMemberRepository householdMemberRepository) {
+            HouseholdMemberRepository householdMemberRepository,
+            HouseholdAuthorizationService householdAuth) {
         this.eventRepository = eventRepository;
         this.readStateRepository = readStateRepository;
         this.householdRepository = householdRepository;
         this.householdMemberRepository = householdMemberRepository;
+        this.householdAuth = householdAuth;
     }
 
     @Transactional
@@ -107,14 +112,9 @@ public class ListActivityService {
     }
 
     private HouseholdEntity requireMemberHousehold(UUID householdId, UserEntity user) {
-        HouseholdEntity household = householdRepository.findById(householdId)
-                .orElseThrow(() -> new NotFoundException("Household not found"));
-
-        if (!householdMemberRepository.existsByUserAndHousehold(user, household)) {
-            throw new AccessDeniedException("User is not a member of this household");
-        }
-
-        return household;
+        householdAuth.require(householdId, user, Permission.ACTIVITY_READ);
+        return householdRepository.findById(householdId)
+                .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
     }
 
     private ListActivityEventResponse toDto(ListActivityEventEntity entity) {

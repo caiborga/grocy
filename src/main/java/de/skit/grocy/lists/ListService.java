@@ -61,6 +61,8 @@ public class ListService {
         UserEntity creator = userRepository.findById(principal.getUser().getId())
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
+        householdAuth.require(householdId, creator, Permission.LIST_CREATE);
+
         if (dto.isDefault()) {
             unsetDefaultList(household.getId());
         }
@@ -83,19 +85,15 @@ public class ListService {
         return mapper.toResponse(saved, stats);
     }
 
-    public List<ListResponse> getAllLists() {
-
-        return listRepository.findAll()
+    public List<ListResponse> getAllLists(UserPrincipal principal) {
+        return householdMemberRepository.findByUserId(principal.getUser().getId())
                 .stream()
+                .map(HouseholdMemberEntity::getHousehold)
+                .flatMap(household -> listRepository.findByHouseholdId(household.getId()).stream())
                 .map(list -> {
-
                     long total = itemRepository.countByList(list);
                     long checked = itemRepository.countByListAndChecked(list, true);
-
-                    Stats stats = new Stats(
-                            (int) total,
-                            (int) checked);
-
+                    Stats stats = new Stats((int) total, (int) checked);
                     return mapper.toResponse(list, stats);
                 })
                 .toList();
@@ -120,15 +118,20 @@ public class ListService {
                 list.isDefault());
     }
 
-    public void deleteList(UUID listId) {
+    public void deleteList(UUID listId, UserPrincipal principal) {
+        ListEntity list = listRepository.findById(listId)
+                .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.LIST_EDIT);
         listRepository.deleteById(listId);
     }
 
     @Transactional
-    public ListResponse update(UUID listId, ListUpdate dto) {
+    public ListResponse update(UUID listId, ListUpdate dto, UserPrincipal principal) {
 
         ListEntity list = listRepository.findById(listId)
-                .orElseThrow(() -> new NotFoundException("List not found"));
+                .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
+
+        householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.LIST_EDIT);
 
         if (dto.title() != null) {
             list.setTitle(dto.title());

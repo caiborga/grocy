@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,4 +24,10 @@ public interface ListActivityEventRepository extends JpaRepository<ListActivityE
             @Param("householdId") UUID householdId,
             @Param("since") OffsetDateTime since,
             @Param("actorId") UUID actorId);
+
+    void deleteByHouseholdId(UUID householdId);
+
+    @Modifying
+    @Query("update ListActivityEventEntity e set e.actorName = :name where e.actor.id = :userId")
+    int anonymizeActorName(@Param("userId") UUID userId, @Param("name") String name);
 }

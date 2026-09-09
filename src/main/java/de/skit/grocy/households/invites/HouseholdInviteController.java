@@ -1,5 +1,6 @@
 package de.skit.grocy.households.invites;
 
+import java.util.List;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import de.skit.grocy.households.invites.dto.HouseholdInviteCreateRequest;
 import de.skit.grocy.households.invites.dto.HouseholdInviteCreatedResponse;
+import de.skit.grocy.households.invites.dto.HouseholdInviteListResponse;
 import de.skit.grocy.households.invites.dto.HouseholdInvitePreviewResponse;
 import de.skit.grocy.security.UserPrincipal;
 
@@ -36,6 +38,22 @@ public class HouseholdInviteController {
             @AuthenticationPrincipal UserPrincipal principal) {
         UUID currentUserId = principal.getUser().getId();
         return inviteService.createInvite(householdId, request, currentUserId, publicAppBaseUrl);
+    }
+
+    @GetMapping("/households/{householdId}/invites")
+    public List<HouseholdInviteListResponse> listInvites(
+            @PathVariable UUID householdId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        return inviteService.listInvites(householdId, principal);
+    }
+
+    @DeleteMapping("/households/{householdId}/invites/{inviteId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void revokeInvite(
+            @PathVariable UUID householdId,
+            @PathVariable UUID inviteId,
+            @AuthenticationPrincipal UserPrincipal principal) {
+        inviteService.revokeInvite(householdId, inviteId, principal);
     }
 
     // ------------------------------------------------------------

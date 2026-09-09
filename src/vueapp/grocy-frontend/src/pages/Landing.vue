@@ -10,7 +10,11 @@
 					<router-link to="/login" class="topbar-link">
 						Einloggen
 					</router-link>
-					<router-link to="/register" class="topbar-cta">
+					<router-link
+						v-if="registrationEnabled"
+						to="/register"
+						class="topbar-cta"
+					>
 						Registrieren
 					</router-link>
 				</nav>
@@ -46,8 +50,15 @@
 					Haushalt beim Einkauf den Überblick behält.
 				</p>
 				<div class="hero-actions animate-in delay-3">
-					<router-link to="/register" class="btn-primary">
+					<router-link
+						v-if="registrationEnabled"
+						to="/register"
+						class="btn-primary"
+					>
 						Jetzt loslegen
+					</router-link>
+					<router-link v-else to="/login" class="btn-primary">
+						Einloggen
 					</router-link>
 					<button
 						type="button"
@@ -94,11 +105,26 @@
 					Öffne Grocy, teile Listen mit deinem Haushalt und vergiss
 					das Zettelchaos.
 				</p>
-				<router-link to="/register" class="btn-primary btn-primary--light">
+				<router-link
+					v-if="registrationEnabled"
+					to="/register"
+					class="btn-primary btn-primary--light"
+				>
 					Jetzt loslegen
+				</router-link>
+				<router-link
+					v-else
+					to="/login"
+					class="btn-primary btn-primary--light"
+				>
+					Einloggen
 				</router-link>
 			</div>
 		</section>
+
+		<footer class="landing-footer">
+			<LegalFooter />
+		</footer>
 	</main>
 </template>
 
@@ -113,7 +139,14 @@ import {
 	Plus,
 	Share
 } from "@element-plus/icons-vue";
-import { ref } from "vue";
+import LegalFooter from "@/components/LegalFooter.vue";
+import { onMounted, ref } from "vue";
+import { usePublicConfig } from "@/services/publicConfig";
+
+const { registrationEnabled, loadPublicConfig } = usePublicConfig();
+onMounted(() => {
+	loadPublicConfig();
+});
 
 const comicImage = "/grocy-comic.png";
 
@@ -596,5 +629,9 @@ const features = [
 	.topbar-link {
 		font-size: 0.9rem;
 	}
+}
+
+.landing-footer {
+	padding: 24px 16px 32px;
 }
 </style>

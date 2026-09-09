@@ -21,7 +21,9 @@ import de.skit.grocy.lists.ListRepository;
 import de.skit.grocy.lists.dto.Stats;
 import de.skit.grocy.lists.mapper.ListMapper;
 import de.skit.grocy.recipe.RecipeRepository;
+import de.skit.grocy.security.HouseholdAuthorizationService;
 import de.skit.grocy.security.UserPrincipal;
+import de.skit.grocy.common.enums.Permission;
 import de.skit.grocy.user.UserEntity;
 import de.skit.grocy.user.UserRepository;
 import jakarta.transaction.Transactional;
@@ -36,6 +38,7 @@ public class HouseholdService {
     private final HouseholdMapper householdMapper;
     private final HouseholdMemberMapper memberMapper;
     private final ListMapper listMapper;
+    private final HouseholdAuthorizationService householdAuth;
 
     public HouseholdService(
             HouseholdRepository householdRepository,
@@ -46,7 +49,8 @@ public class HouseholdService {
             RecipeRepository recipeRepository,
             HouseholdMapper householdMapper,
             HouseholdMemberMapper memberMapper,
-            ListMapper listMapper) {
+            ListMapper listMapper,
+            HouseholdAuthorizationService householdAuth) {
         this.householdRepository = householdRepository;
         this.householdMemberRepository = householdMemberRepository;
         this.listRepository = listRepository;
@@ -55,6 +59,7 @@ public class HouseholdService {
         this.householdMapper = householdMapper;
         this.memberMapper = memberMapper;
         this.listMapper = listMapper;
+        this.householdAuth = householdAuth;
     }
 
     public List<HouseholdResponse> getAllHouseholds() {
@@ -112,8 +117,10 @@ public class HouseholdService {
     }
 
     public HouseholdDetailResponse getHousehold(UUID id, UserPrincipal principal) {
+        householdAuth.requireMember(id, principal.getUser());
+
         HouseholdEntity household = householdRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Household " + id + " not found"));
+                .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
 
         var members = householdMemberRepository.findByHouseholdId(household.getId());
         var lists = listRepository.findByHouseholdId(household.getId());
@@ -137,10 +144,18 @@ public class HouseholdService {
     }
 
     @Transactional
-    public HouseholdResponse updateHousehold(UUID id, HouseholdUpdate update) {
-
+    public HouseholdResponse updateHousehold(UUID id, HouseholdUpdate update, UserPrincipal principal) {
         HouseholdEntity entity = householdRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("Household " + id + " not found"));
+                .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
+
+        householdAuth.requireMember(id, principal.getUser());
+
+        if (update.name() != null) {
+            householdAuth.require(id, principal.getUser(), Permission.HOUSEHOLD_RENAME);
+        }
+        if (update.archived() != null) {
+            householdAuth.require(id, principal.getUser(), Permission.HOUSEHOLD_DELETE);
+        }
 
         householdMapper.applyPatch(update, entity);
 

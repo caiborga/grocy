@@ -8,36 +8,36 @@ import de.skit.grocy.security.dto.RegisterRequest;
 import de.skit.grocy.security.dto.RegisterResponse;
 import de.skit.grocy.security.dto.ResetPasswordRequest;
 import de.skit.grocy.security.dto.VerifyEmailRequest;
+import de.skit.grocy.security.session.AuthSessionService;
 import de.skit.grocy.user.UserEntity;
 import de.skit.grocy.user.dto.UserResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
-    private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final AuthService authService;
+    private final AuthSessionService authSessionService;
 
-    public AuthController(AuthenticationManager authenticationManager, JwtService jwtService, AuthService authService) {
-        this.authenticationManager = authenticationManager;
+    public AuthController(
+            JwtService jwtService,
+            AuthService authService,
+            AuthSessionService authSessionService) {
         this.jwtService = jwtService;
         this.authService = authService;
+        this.authSessionService = authSessionService;
     }
 
     @PostMapping("/register")
@@ -47,39 +47,37 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
-
-        Authentication authentication;
         try {
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            request.email(),
-                            request.password()));
+            UserEntity user = authService.login(request.email(), request.password());
+            UserPrincipal principal = new UserPrincipal(user);
+            JwtService.IssuedJwt issued = jwtService.generateToken(principal);
+            authSessionService.create(user, issued.jti(), issued.expiresAt());
+
+            UserResponse userResponse = new UserResponse(
+                    user.getId(),
+                    user.getName(),
+                    user.getEmail(),
+                    user.getCreatedAt(),
+                    user.getUpdatedAt(),
+                    user.getActiveHouseholdId());
+
+            return ResponseEntity.ok(new LoginResponse(issued.token(), "Bearer", userResponse));
         } catch (DisabledException ex) {
             return ResponseEntity.status(403).body(new LoginResponse(null, "email_not_verified", null));
         } catch (LockedException ex) {
-            return ResponseEntity.status(423).body(new LoginResponse(null, "account_locked", null));
+            return ResponseEntity.status(401).body(new LoginResponse(null, null, null));
         } catch (BadCredentialsException ex) {
             return ResponseEntity.status(401).body(new LoginResponse(null, null, null));
         }
+    }
 
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-
-        UserEntity user = principal.getUser();
-        authService.recordSuccessfulLogin(user);
-
-        String token = jwtService.generateToken(principal);
-
-        UserResponse userResponse = new UserResponse(
-                user.getId(),
-                user.getName(),
-                user.getEmail(),
-                user.getCreatedAt(),
-                user.getUpdatedAt(),
-                user.getActiveHouseholdId()
-            );
-
-        return ResponseEntity.ok(
-                new LoginResponse(token, "Bearer", userResponse));
+    @PostMapping("/logout")
+    public ResponseEntity<AuthMessageResponse> logout(HttpServletRequest request) {
+        Object jti = request.getAttribute(JwtAuthFilter.JTI_ATTRIBUTE);
+        if (jti instanceof String value) {
+            authService.logout(value);
+        }
+        return ResponseEntity.ok(new AuthMessageResponse("Abgemeldet."));
     }
 
     @PostMapping("/verify-email")
