@@ -14,6 +14,7 @@ eine geprüfte, vollständige oder rechtssichere Absicherung.
 - Logout widerruft die aktuelle Sitzung
 - Passwort-Reset widerruft alle Sitzungen
 - Rate-Limiting (prozesslokal) für Login, Registrierung, Reset, Verifikation, Invite-Annahme
+- Client-IP für Limits: `RemoteAddr`, bei Trusted-Proxy (Standard Loopback) `X-Real-IP` / `X-Forwarded-For`
 - generische Antworten bei Registrierung (bereits vergebene E-Mail) und Passwort-Reset
 - Login prüft das Passwort, bevor ein unverifizierter Account erkennbar wird
 
@@ -50,12 +51,13 @@ eine geprüfte, vollständige oder rechtssichere Absicherung.
 
 - JWT liegt im `localStorage` (XSS kann die Sitzung stehlen). Es gibt kein HttpOnly-Cookie.
 - Rate-Limiting ist in-memory und gilt pro Prozess, nicht clusterweit.
+- Forwarded-IPs werden nur von Loopback-Proxys übernommen. Nginx muss `X-Real-IP` / `X-Forwarded-For` auf `$remote_addr` setzen (nicht ungeprüft anhängen). Der Origin darf nicht zusätzlich öffentlich erreichbar sein, oder `APP_RATE_LIMIT_TRUSTED_PROXIES` muss zur tatsächlichen Proxy-IP passen.
 - Hibernate `ddl-auto: update` auch in Produktion: Schemaänderungen ohne Migrations-Review.
 - Kein Unique-Constraint auf `(household_id, user_id)`.
 - Kein Account-Lock nach Fehlversuchen (`lockedUntil` ungenutzt).
 - Keine CSP ohne `'unsafe-inline'` für Styles (Element Plus / vorhandenes CSS).
 - Kein eingechecktes Produktions-Compose/Nginx; lokale Compose-Datei bleibt gitignoriert, Vorlage ohne Passwort in `docker-compose.example.yml`.
-- Reverse-Proxy-IPs: Rate-Limit nutzt `RemoteAddr`. `X-Forwarded-For` wird absichtlich nicht vertraut.
+- Reverse-Proxy-IPs: ohne Nginx-Header bleibt hinter einem Proxy nur Loopback sichtbar; mit Loopback als Trusted-Proxy und gesetztem `X-Real-IP` gilt die Client-IP.
 - Keine automatisierte, reproduzierbare Backup-/Restore-Strecke im Repository.
 - Impressum/Datenschutz enthalten `TODO` und sind unvollständig.
 - Keine Behauptung, die Anwendung sei auditiert, pentested oder vollständig abgesichert.

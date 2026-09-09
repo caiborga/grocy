@@ -23,10 +23,14 @@ import java.io.IOException;
 public class AuthRateLimitFilter extends OncePerRequestFilter {
 
     private final boolean enabled;
+    private final ClientIpResolver clientIpResolver;
     private final Map<String, ConcurrentLinkedDeque<Long>> windows = new ConcurrentHashMap<>();
 
-    public AuthRateLimitFilter(@Value("${app.rate-limit.enabled:true}") boolean enabled) {
+    public AuthRateLimitFilter(
+            @Value("${app.rate-limit.enabled:true}") boolean enabled,
+            ClientIpResolver clientIpResolver) {
         this.enabled = enabled;
+        this.clientIpResolver = clientIpResolver;
     }
 
     @Override
@@ -49,7 +53,7 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
             return;
         }
 
-        String key = request.getRemoteAddr() + "|" + limit.bucket();
+        String key = clientIpResolver.resolve(request) + "|" + limit.bucket();
         long now = System.currentTimeMillis();
         long cutoff = now - limit.window().toMillis();
 

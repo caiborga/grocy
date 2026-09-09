@@ -61,3 +61,4 @@ app:
     emails: ${APP_ADMIN_EMAILS:}
   rate-limit:
     enabled: ${APP_RATE_LIMIT_ENABLED:true}
+    trusted-proxies: ${APP_RATE_LIMIT_TRUSTED_PROXIES:127.0.0.1,::1}
