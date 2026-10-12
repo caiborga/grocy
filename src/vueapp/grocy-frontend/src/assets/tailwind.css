@@ -196,3 +196,13 @@
 .el-message-box {
 	border-radius: 1.25rem !important;
 }
+
+/* Keep touch-device form text large enough to prevent iOS focus zoom.
+   Apply globally so inputs in teleported dialogs are covered as well. */
+@media (any-pointer: coarse) {
+	input,
+	textarea,
+	select {
+		font-size: max(16px, 1rem) !important;
+	}
+}
