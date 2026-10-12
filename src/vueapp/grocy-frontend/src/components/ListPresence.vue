@@ -41,7 +41,9 @@
                     </template>
                 </el-popover>
             </div>
-            <span v-else-if="!connected" class="presence-status" role="status">Live-Verbindung wird hergestellt…</span>
+            <span v-else-if="!connected" class="presence-status" role="status" aria-label="Live-Verbindung wird hergestellt…" title="Live-Verbindung wird hergestellt…">
+                <span class="presence-spinner" aria-hidden="true" />
+            </span>
         </aside>
     </Teleport>
 </template>
@@ -183,10 +185,27 @@ onBeforeUnmount(() => {
     border: 2px solid white;
 }
 .presence-status {
-    display: block;
-    padding: 0.5rem;
-    font-size: 0.75rem;
-    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: #e2e8f0;
+}
+.presence-spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #dbeafe;
+    border-top-color: #2563eb;
+    border-radius: 50%;
+    animation: presence-spin 0.8s linear infinite;
+}
+@keyframes presence-spin {
+    to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .presence-spinner { animation: none; }
 }
 @media (min-width: 768px) {
     .presence-dock { bottom: 1.5rem; }
