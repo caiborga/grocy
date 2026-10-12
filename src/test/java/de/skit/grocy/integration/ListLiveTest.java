@@ -64,7 +64,8 @@ class ListLiveTest extends IntegrationTestBase {
         UUID memberId = membership.getUser().getId();
         try {
             assertThat(content(ownerStream).substring(content(ownerStream).lastIndexOf("event:presence")))
-                    .contains(ownerId.toString(), memberId.toString());
+                    .contains(ownerId.toString(), memberId.toString(), "\"role\":\"EDITOR\"", "\"joinedAt\":")
+                    .doesNotContain(ownerEmail, memberEmail, "passwordHash", "token");
             var transaction = new TransactionTemplate(transactions);
             transaction.executeWithoutResult(status -> publisher.publishEvent(new ListChanged(UUID.fromString(listId))));
             assertThat(content(memberStream)).contains("event:list-changed");

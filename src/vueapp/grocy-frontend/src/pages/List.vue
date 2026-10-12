@@ -1,5 +1,6 @@
 <template>
 	<div class="g-page">
+        <ListPresence v-if="list" :users="presentUsers" :connected="liveConnected" />
 		<div class="g-page-inner-narrow space-y-4" v-loading="pageLoading">
 			<header class="g-panel">
 				<div class="grid grid-cols-[1fr_auto] items-center gap-3">
@@ -61,12 +62,6 @@
 					</div>
 				</div>
 
-				<div v-if="list" class="mt-3 text-xs text-muted" aria-live="polite">
-                    <span v-if="liveConnected && presentUsers.length > 1">
-                        Gerade geöffnet: {{ presentUsers.map(user => user.name).join(", ") }}
-                    </span>
-                    <span v-else-if="!liveConnected">Live-Verbindung wird hergestellt…</span>
-                </div>
                 <div v-if="list" class="mt-5">
 					<div
 						class="mb-2 flex items-center justify-between text-sm text-muted"
@@ -632,6 +627,7 @@ import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useRoute } from "vue-router";
 import { listService, listWriteState } from "@/services/listService";
 import { subscribeToList } from "@/services/listLive";
+import ListPresence from "@/components/ListPresence.vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { PERM } from "@/auth/perms";
 import { usePermissions } from "@/composables/permissionComp";

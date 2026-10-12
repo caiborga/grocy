@@ -1,6 +1,7 @@
 package de.skit.grocy.lists.live;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,8 @@ import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import de.skit.grocy.common.enums.Permission;
+import de.skit.grocy.common.enums.Role;
+import de.skit.grocy.households.member.HouseholdMemberRepository;
 import de.skit.grocy.common.exceptions.NotFoundException;
 import de.skit.grocy.lists.ListRepository;
 import de.skit.grocy.security.HouseholdAuthorizationService;
@@ -30,16 +33,19 @@ public class ListLiveService {
     private final JwtService jwt;
     private final UserDetailsService users;
     private final AuthSessionService sessions;
+    private final HouseholdMemberRepository members;
     private final Map<UUID, Connection> connections = new LinkedHashMap<>();
     private final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
 
     public ListLiveService(ListRepository lists, HouseholdAuthorizationService authorization,
-            JwtService jwt, UserDetailsService users, AuthSessionService sessions) {
+            JwtService jwt, UserDetailsService users, AuthSessionService sessions,
+            HouseholdMemberRepository members) {
         this.lists = lists;
         this.authorization = authorization;
         this.jwt = jwt;
         this.users = users;
         this.sessions = sessions;
+        this.members = members;
         timer.scheduleAtFixedRate(this::heartbeat, 15, 15, TimeUnit.SECONDS);
     }
 
@@ -126,7 +132,13 @@ public class ListLiveService {
         // A person with several tabs appears once. The last closed tab removes them.
         Map<UUID, PresenceUser> present = new LinkedHashMap<>();
         connections.values().stream().filter(c -> c.listId.equals(listId))
-                .forEach(c -> present.put(c.userId, new PresenceUser(c.userId, c.name)));
+                .forEach(c -> {
+                    if (present.containsKey(c.userId)) return;
+                    // Share the same member details as the household page, never account credentials.
+                    members.findByHouseholdIdAndUserId(c.householdId, c.userId).ifPresent(member ->
+                            present.put(c.userId, new PresenceUser(c.userId, member.getUser().getName(),
+                                    member.getRole(), member.getJoinedAt())));
+                });
         return present.values().stream().toList();
     }
 
@@ -161,6 +173,6 @@ public class ListLiveService {
         active.values().forEach(c -> c.emitter.complete());
     }
 
-    public record PresenceUser(UUID id, String name) {}
+    public record PresenceUser(UUID id, String name, Role role, OffsetDateTime joinedAt) {}
     private record Connection(UUID listId, UUID householdId, UUID userId, String name, String token, SseEmitter emitter) {}
 }

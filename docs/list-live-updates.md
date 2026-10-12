@@ -17,7 +17,10 @@ conflict behavior; SSE does not introduce collaborative text editing.
 
 A user is present while at least one stream for that list is open. Background tabs
 count too. Several tabs belonging to the same user appear once; names include the
-current user. The list header shows names when more than one person is present.
+current user. A fixed dock shows initials even while scrolling, above the mobile
+navigation. Hover, keyboard focus or a tap opens the person's full name, household
+role and membership date. Tapping again, outside the dock or pressing Escape closes
+the details. Account email addresses and authentication data are not shared.
 
 Navigation sends `DELETE /api/lists/{listId}/events/{connectionId}` using `keepalive`.
 Only the connection's owner can disconnect it. Unexpected disconnects are detected
