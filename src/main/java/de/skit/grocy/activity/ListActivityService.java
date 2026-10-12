@@ -7,6 +7,8 @@ import java.util.UUID;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import de.skit.grocy.lists.live.ListChanged;
 
 import de.skit.grocy.activity.dto.ListActivityEventResponse;
 import de.skit.grocy.activity.dto.ListActivityFeedResponse;
@@ -27,6 +29,7 @@ public class ListActivityService {
     private static final int FEED_LIMIT = 50;
     private static final int DEFAULT_LOOKBACK_DAYS = 7;
 
+    private final ApplicationEventPublisher publisher;
     private final ListActivityEventRepository eventRepository;
     private final ActivityReadStateRepository readStateRepository;
     private final HouseholdRepository householdRepository;
@@ -34,11 +37,13 @@ public class ListActivityService {
     private final HouseholdAuthorizationService householdAuth;
 
     public ListActivityService(
+            ApplicationEventPublisher publisher,
             ListActivityEventRepository eventRepository,
             ActivityReadStateRepository readStateRepository,
             HouseholdRepository householdRepository,
             HouseholdMemberRepository householdMemberRepository,
             HouseholdAuthorizationService householdAuth) {
+        this.publisher = publisher;
         this.eventRepository = eventRepository;
         this.readStateRepository = readStateRepository;
         this.householdRepository = householdRepository;
@@ -68,6 +73,7 @@ public class ListActivityService {
         event.setMetaCount(metaCount);
         event.setMetaText(metaText);
         eventRepository.save(event);
+        publisher.publishEvent(new ListChanged(list.getId()));
     }
 
     public ListActivityFeedResponse getFeed(UUID householdId, UserPrincipal principal) {
