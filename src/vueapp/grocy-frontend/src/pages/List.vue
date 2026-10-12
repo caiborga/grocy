@@ -1,5 +1,6 @@
 <template>
 	<div class="g-page">
+        <ListPresence v-if="list" :users="otherPresentUsers" :connected="liveConnected" />
 		<div class="g-page-inner-narrow space-y-4" v-loading="pageLoading">
 			<header class="g-panel">
 				<div class="grid grid-cols-[1fr_auto] items-center gap-3">
@@ -61,7 +62,7 @@
 					</div>
 				</div>
 
-				<div v-if="list" class="mt-5">
+                <div v-if="list" class="mt-5">
 					<div
 						class="mb-2 flex items-center justify-between text-sm text-muted"
 					>
@@ -622,9 +623,12 @@
 </style>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { useRoute } from "vue-router";
-import { listService } from "@/services/listService";
+import { listService, listWriteState } from "@/services/listService";
+import { subscribeToList } from "@/services/listLive";
+import ListPresence from "@/components/ListPresence.vue";
+import { useUserStore } from "@/stores/userStore";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { PERM } from "@/auth/perms";
 import { usePermissions } from "@/composables/permissionComp";
@@ -633,6 +637,105 @@ const { can } = usePermissions();
 const route = useRoute();
 
 const pageLoading = ref(false);
+const presentUsers = ref([]);
+const userStore = useUserStore();
+const otherPresentUsers = computed(() => {
+    const currentUserId = userStore.me?.id;
+    return currentUserId ? presentUsers.value.filter(user => user.id !== currentUserId) : [];
+});
+const liveConnected = ref(false);
+let stopLive = () => {};
+let refreshTimer;
+let liveGeneration = 0;
+
+function stopLiveUpdates() {
+    liveGeneration++;
+    stopLive();
+    clearTimeout(refreshTimer);
+    presentUsers.value = [];
+    liveConnected.value = false;
+}
+
+function startLiveUpdates(id) {
+    const generation = liveGeneration;
+    let refreshing = false;
+    let dirty = false;
+
+    function scheduleRefresh() {
+        dirty = true;
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(refresh, 100);
+    }
+
+    async function refresh() {
+        if (generation !== liveGeneration || refreshing || !dirty) return;
+        if (listWriteState.pending > 0) {
+            refreshTimer = setTimeout(refresh, 100);
+            return;
+        }
+        refreshing = true;
+        dirty = false;
+        const revision = listWriteState.revision;
+        const filter = selectedFilter.value;
+        const sort = selectedSort.value;
+        try {
+            const [listResponse, itemsResponse] = await Promise.all([
+                listService.getList(id), listService.getItems(id, filter, sort)
+            ]);
+            if (generation !== liveGeneration) return;
+            // A response started before a local edit must not overwrite that edit.
+            if (revision !== listWriteState.revision || listWriteState.pending > 0
+                || filter !== selectedFilter.value || sort !== selectedSort.value) {
+                dirty = true;
+            } else {
+                list.value = listResponse.data;
+                items.value = itemsResponse.data;
+            }
+        } catch (error) {
+            if (generation !== liveGeneration) return;
+            if ([403, 404].includes(error.response?.status)) {
+                stopLiveUpdates();
+                list.value = null;
+                items.value = [];
+                ElMessage.warning("Diese Liste ist nicht mehr verfügbar.");
+            } else {
+                dirty = true;
+            }
+        } finally {
+            refreshing = false;
+            if (dirty && generation === liveGeneration) refreshTimer = setTimeout(refresh, 1500);
+        }
+    }
+
+    stopLive = subscribeToList(id, (event, data) => {
+        if (generation !== liveGeneration) return;
+        if (event === "connected") {
+            liveConnected.value = true;
+            // Reload on every connection to recover changes missed while offline.
+            scheduleRefresh();
+        } else if (event === "presence") {
+            presentUsers.value = data;
+        } else if (event === "list-changed") {
+            scheduleRefresh();
+        }
+    }, () => {
+        if (generation !== liveGeneration) return;
+        liveConnected.value = false;
+        presentUsers.value = [];
+    });
+}
+
+function restoreLiveUpdates(event) {
+    if (event.persisted) void getList();
+}
+
+window.addEventListener("pagehide", stopLiveUpdates);
+window.addEventListener("pageshow", restoreLiveUpdates);
+onBeforeUnmount(() => {
+    stopLiveUpdates();
+    window.removeEventListener("pagehide", stopLiveUpdates);
+    window.removeEventListener("pageshow", restoreLiveUpdates);
+});
 const togglingIds = ref(new Set());
 
 const list = ref(null);
@@ -729,14 +832,19 @@ watch([selectedFilter, selectedSort], async () => {
 });
 
 async function getList() {
+    stopLiveUpdates();
+    const generation = liveGeneration;
 	const raw = route.params.id;
 	const id = raw ? raw : "default";
 	pageLoading.value = true;
 	try {
 		const res = await listService.getList(id);
-		list.value = res.data;
+		if (generation !== liveGeneration) return;
+        list.value = res.data;
 		await loadItems();
+        if (generation === liveGeneration) startLiveUpdates(list.value.id);
 	} catch (e) {
+        if (generation !== liveGeneration) return;
 		console.error(e);
 		list.value = null;
 		items.value = [];
@@ -754,7 +862,7 @@ async function loadItems() {
 	const filter = selectedFilter.value;
 	const sort = selectedSort.value;
 	const res = await listService.getItems(listId, filter, sort);
-	items.value = res.data;
+	if (list.value?.id === listId && filter === selectedFilter.value && sort === selectedSort.value) items.value = res.data;
 }
 
 async function addItem() {

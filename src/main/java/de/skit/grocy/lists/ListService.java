@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.UUID;
 
 import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import de.skit.grocy.lists.live.ListChanged;
 import org.springframework.transaction.annotation.Transactional;
 
 import de.skit.grocy.common.enums.Permission;
@@ -27,6 +29,7 @@ import de.skit.grocy.user.UserRepository;
 @Service
 public class ListService {
 
+    private final ApplicationEventPublisher publisher;
     private final ListRepository listRepository;
     private final HouseholdRepository householdRepository;
     private final UserRepository userRepository;
@@ -36,6 +39,7 @@ public class ListService {
     private final HouseholdAuthorizationService householdAuth;
 
     public ListService(
+            ApplicationEventPublisher publisher,
             ListRepository listRepository,
             HouseholdRepository householdRepository,
             UserRepository userRepository,
@@ -43,6 +47,7 @@ public class ListService {
             HouseholdMemberRepository householdMemberRepository,
             ListMapper mapper,
             HouseholdAuthorizationService householdAuth) {
+        this.publisher = publisher;
         this.listRepository = listRepository;
         this.householdRepository = householdRepository;
         this.userRepository = userRepository;
@@ -118,11 +123,13 @@ public class ListService {
                 list.isDefault());
     }
 
+    @Transactional
     public void deleteList(UUID listId, UserPrincipal principal) {
         ListEntity list = listRepository.findById(listId)
                 .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
         householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.LIST_EDIT);
         listRepository.deleteById(listId);
+        publisher.publishEvent(new ListChanged(listId));
     }
 
     @Transactional
@@ -132,6 +139,8 @@ public class ListService {
                 .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
 
         householdAuth.require(list.getHousehold().getId(), principal.getUser(), Permission.LIST_EDIT);
+
+        publisher.publishEvent(new ListChanged(listId));
 
         if (dto.title() != null) {
             list.setTitle(dto.title());
@@ -207,6 +216,7 @@ public class ListService {
                 .ifPresent(list -> {
                     list.setDefault(false);
                     listRepository.save(list);
+                    publisher.publishEvent(new ListChanged(list.getId()));
                 });
     }
 }

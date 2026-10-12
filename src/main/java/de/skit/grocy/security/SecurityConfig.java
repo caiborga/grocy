@@ -65,6 +65,7 @@ public class SecurityConfig {
                                         + "base-uri 'self'; "
                                         + "form-action 'self'")))
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ASYNC).permitAll()
                         .requestMatchers("/health").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()

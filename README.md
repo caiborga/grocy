@@ -45,21 +45,26 @@ Grocy is a lightweight web application for **managing shared grocery lists withi
 ### Run Backend
 
 ```bash
-cd backend
-./mvnw spring-boot:run
+docker compose up -d db
+.\mvnw.cmd "-Dspring-boot.run.profiles=local" spring-boot:run
 ```
 
 Copy `.env.example` to `.env` and replace every `CHANGE_ME`. `.env` is gitignored.
+For local development, set `PORT=8081`,
+`SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:3300/grocy`,
+`SPRING_DATASOURCE_USERNAME=grocy_admin` and `APP_FRONTEND_URL=http://localhost:5173`.
+Use the existing database password and a random JWT secret of at least 32 bytes.
+The backend runs on `http://localhost:8081` with the `local` profile.
 
 ### Run Frontend
 
 ```bash
-cd frontend
+cd src/vueapp/grocy-frontend
 npm install
 npm run dev
 ```
 
-The frontend runs on `http://localhost:5173` and proxies API requests to `/api`.
+The frontend runs on `http://localhost:5173` and proxies `/api` requests to `http://localhost:8081`.
 
 ## Architecture Notes
 

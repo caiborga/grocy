@@ -1,6 +1,19 @@
 import { Item } from "@/models/Item";
 import api from "@/services/api";
 
+// Live reloads wait for local writes so an early SSE event cannot duplicate a new item.
+export const listWriteState = { pending: 0, revision: 0 };
+async function write<T>(request: () => Promise<T>): Promise<T> {
+    listWriteState.pending++;
+    listWriteState.revision++;
+    try {
+        return await request();
+    } finally {
+        listWriteState.pending--;
+        listWriteState.revision++;
+    }
+}
+
 export const listService = {
 	getList(id: string | "default") {
 		return api.get(`/lists/${id}`);
@@ -19,7 +32,7 @@ export const listService = {
 		listId: string,
 		item: Item
 	) {
-		return api.post(`/lists/${listId}/items`, item);
+		return write(() => api.post(`/lists/${listId}/items`, item));
 	},
 
 	patchItem(
@@ -27,22 +40,22 @@ export const listService = {
 		itemId: string,
 		patch: Item,
 	) {
-		return api.patch(`/lists/${listId}/items/${itemId}`, patch);
+		return write(() => api.patch(`/lists/${listId}/items/${itemId}`, patch));
 	},
 
 	deleteList(listId: string) {
-		return api.delete(`/lists/${listId}`);
+		return write(() => api.delete(`/lists/${listId}`));
 	},
 
 	deleteItem(listId: string, itemId: string) {
-		return api.delete(`/lists/${listId}/items/${itemId}`);
+		return write(() => api.delete(`/lists/${listId}/items/${itemId}`));
 	},
 
 	clearChecked(listId: string) {
-		return api.delete(`/lists/${listId}/items/checked`);
+		return write(() => api.delete(`/lists/${listId}/items/checked`));
 	},
 
 	patchList(listId: string, patch: { title?: string; isDefault?: boolean }) {
-		return api.patch(`/lists/${listId}`, patch);
+		return write(() => api.patch(`/lists/${listId}`, patch));
 	}
 };
