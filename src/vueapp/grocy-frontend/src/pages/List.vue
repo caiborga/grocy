@@ -1,6 +1,6 @@
 <template>
 	<div class="g-page">
-        <ListPresence v-if="list" :users="presentUsers" :connected="liveConnected" />
+        <ListPresence v-if="list" :users="otherPresentUsers" :connected="liveConnected" />
 		<div class="g-page-inner-narrow space-y-4" v-loading="pageLoading">
 			<header class="g-panel">
 				<div class="grid grid-cols-[1fr_auto] items-center gap-3">
@@ -628,6 +628,7 @@ import { useRoute } from "vue-router";
 import { listService, listWriteState } from "@/services/listService";
 import { subscribeToList } from "@/services/listLive";
 import ListPresence from "@/components/ListPresence.vue";
+import { useUserStore } from "@/stores/userStore";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { PERM } from "@/auth/perms";
 import { usePermissions } from "@/composables/permissionComp";
@@ -637,6 +638,11 @@ const route = useRoute();
 
 const pageLoading = ref(false);
 const presentUsers = ref([]);
+const userStore = useUserStore();
+const otherPresentUsers = computed(() => {
+    const currentUserId = userStore.me?.id;
+    return currentUserId ? presentUsers.value.filter(user => user.id !== currentUserId) : [];
+});
 const liveConnected = ref(false);
 let stopLive = () => {};
 let refreshTimer;

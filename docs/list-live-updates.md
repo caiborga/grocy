@@ -16,8 +16,8 @@ conflict behavior; SSE does not introduce collaborative text editing.
 ## Presence semantics
 
 A user is present while at least one stream for that list is open. Background tabs
-count too. Several tabs belonging to the same user appear once; names include the
-current user. A fixed dock shows initials even while scrolling, above the mobile
+count too. Several tabs belonging to the same user appear once. Each browser hides
+its own user; the dock is hidden when nobody else is present. A fixed dock shows initials even while scrolling, above the mobile
 navigation. Hover, keyboard focus or a tap opens the person's full name, household
 role and membership date. Tapping again, outside the dock or pressing Escape closes
 the details. Account email addresses and authentication data are not shared.

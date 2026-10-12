@@ -1,6 +1,6 @@
 <template>
     <Teleport to="body">
-        <aside ref="dock" class="presence-dock" aria-label="Auf dieser Liste anwesend">
+        <aside v-if="!connected || users.length" ref="dock" class="presence-dock" aria-label="Weitere Personen auf dieser Liste">
             <div v-if="connected && users.length" class="presence-chips">
                 <el-popover
                     v-for="user in users"
@@ -41,7 +41,7 @@
                     </template>
                 </el-popover>
             </div>
-            <span v-else class="presence-status" role="status">Live-Verbindung wird hergestellt…</span>
+            <span v-else-if="!connected" class="presence-status" role="status">Live-Verbindung wird hergestellt…</span>
         </aside>
     </Teleport>
 </template>
