@@ -19,11 +19,22 @@ public interface ListActivityEventRepository extends JpaRepository<ListActivityE
             where e.household.id = :householdId
               and e.createdAt > :since
               and e.actor.id <> :actorId
+              and :actorId not member of e.readers
             """)
     long countUnread(
             @Param("householdId") UUID householdId,
             @Param("since") OffsetDateTime since,
             @Param("actorId") UUID actorId);
+
+    @Query("""
+            select e from ListActivityEventEntity e
+            where e.household.id = :householdId and e.actor.id <> :actorId
+              and e.createdAt >= :since
+              and (e.createdAt < :beforeTime or (e.createdAt = :beforeTime and e.id < :beforeId))
+            order by e.createdAt desc, e.id desc
+            """)
+    List<ListActivityEventEntity> findFeed(UUID householdId, UUID actorId, OffsetDateTime since,
+            OffsetDateTime beforeTime, UUID beforeId, Pageable pageable);
 
     void deleteByHouseholdId(UUID householdId);
 

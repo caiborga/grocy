@@ -26,7 +26,7 @@ import jakarta.transaction.Transactional;
 @Service
 public class ListActivityService {
 
-    private static final int FEED_LIMIT = 50;
+    private static final int FEED_LIMIT = 20;
     private static final int DEFAULT_LOOKBACK_DAYS = 7;
 
     private final ApplicationEventPublisher publisher;
@@ -76,41 +76,51 @@ public class ListActivityService {
         publisher.publishEvent(new ListChanged(list.getId()));
     }
 
-    public ListActivityFeedResponse getFeed(UUID householdId, UserPrincipal principal) {
-        HouseholdEntity household = requireMemberHousehold(householdId, principal.getUser());
-        UserEntity user = principal.getUser();
-
-        OffsetDateTime since = resolveUnreadSince(user.getId(), householdId);
-
-        long unreadCount = eventRepository.countUnread(householdId, since, user.getId());
-
-        List<ListActivityEventResponse> events = eventRepository
-                .findByHouseholdIdOrderByCreatedAtDesc(householdId, PageRequest.of(0, FEED_LIMIT))
-                .stream()
-                .map(this::toDto)
-                .toList();
-
-        return new ListActivityFeedResponse(unreadCount, events);
+    @org.springframework.transaction.annotation.Transactional(readOnly = true)
+    public ListActivityFeedResponse getFeed(UUID householdId, UserPrincipal principal, UUID before, boolean older) {
+        requireMemberHousehold(householdId, principal.getUser());
+        UUID userId = principal.getUser().getId();
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime since = resolveUnreadSince(userId, householdId);
+        OffsetDateTime beforeTime = now;
+        UUID beforeId = new UUID(-1L, -1L);
+        if (before != null) {
+            var cursor = eventRepository.findById(before)
+                    .filter(e -> e.getHousehold().getId().equals(householdId))
+                    .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
+            beforeTime = cursor.getCreatedAt();
+            beforeId = cursor.getId();
+        }
+        var all = eventRepository.findFeed(householdId, userId, OffsetDateTime.parse("1970-01-01T00:00:00Z"),
+                beforeTime, beforeId, PageRequest.of(0, FEED_LIMIT + 1));
+        var visible = all.stream()
+                .filter(e -> older || e.getCreatedAt().isAfter(now.minusDays(DEFAULT_LOOKBACK_DAYS)))
+                .limit(FEED_LIMIT).toList();
+        var events = visible.stream().map(e -> toDto(e, e.getCreatedAt().isAfter(since)
+                && !e.getReaders().contains(userId))).toList();
+        return new ListActivityFeedResponse(eventRepository.countUnread(householdId, since, userId), events,
+                all.size() > visible.size(), visible.isEmpty() ? before : visible.getLast().getId());
     }
 
     @Transactional
-    public void markRead(UUID householdId, UserPrincipal principal) {
-        HouseholdEntity household = requireMemberHousehold(householdId, principal.getUser());
-        UserEntity user = principal.getUser();
-
-        ActivityReadStateEntity state = readStateRepository
-                .findByUserIdAndHouseholdId(user.getId(), householdId)
-                .orElseGet(() -> {
-                    ActivityReadStateEntity created = new ActivityReadStateEntity();
-                    created.setUser(user);
-                    created.setHousehold(household);
-                    return created;
-                });
-
-        state.setLastReadAt(OffsetDateTime.now());
-        readStateRepository.save(state);
+    public void markRead(UUID householdId, UserPrincipal principal, List<UUID> eventIds) {
+        requireMemberHousehold(householdId, principal.getUser());
+        if (eventIds.size() > FEED_LIMIT) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Zu viele Einträge");
+        }
+        var events = eventRepository.findAllById(eventIds);
+        if (events.stream().anyMatch(e -> !e.getHousehold().getId().equals(householdId))) {
+            throw new AccessDeniedException("Nicht erlaubt");
+        }
+        events.forEach(e -> e.getReaders().add(principal.getUser().getId()));
     }
 
+    public long getUnreadCount(UUID householdId, UserPrincipal principal) {
+        requireMemberHousehold(householdId, principal.getUser());
+        UUID userId = principal.getUser().getId();
+        return eventRepository.countUnread(householdId, resolveUnreadSince(userId, householdId), userId);
+    }
     private OffsetDateTime resolveUnreadSince(UUID userId, UUID householdId) {
         return readStateRepository.findByUserIdAndHouseholdId(userId, householdId)
                 .map(ActivityReadStateEntity::getLastReadAt)
@@ -123,7 +133,7 @@ public class ListActivityService {
                 .orElseThrow(() -> new NotFoundException("Nicht gefunden"));
     }
 
-    private ListActivityEventResponse toDto(ListActivityEventEntity entity) {
+    private ListActivityEventResponse toDto(ListActivityEventEntity entity, boolean unread) {
         return new ListActivityEventResponse(
                 entity.getId(),
                 entity.getHousehold().getId(),
@@ -136,6 +146,6 @@ public class ListActivityService {
                 entity.getItemTitle(),
                 entity.getMetaCount(),
                 entity.getMetaText(),
-                entity.getCreatedAt());
+                entity.getCreatedAt(), unread);
     }
 }

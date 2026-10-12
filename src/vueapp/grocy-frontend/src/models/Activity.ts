@@ -20,9 +20,12 @@ export interface ListActivityEvent {
 	metaCount: number | null;
 	metaText: string | null;
 	createdAt: string;
+	unread: boolean;
 }
 
 export interface ListActivityFeed {
 	unreadCount: number;
 	events: ListActivityEvent[];
+	hasMore: boolean;
+	nextCursor: string | null;
 }

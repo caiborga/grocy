@@ -4,5 +4,7 @@ import java.util.List;
 
 public record ListActivityFeedResponse(
         long unreadCount,
-        List<ListActivityEventResponse> events) {
+        List<ListActivityEventResponse> events,
+        boolean hasMore,
+        java.util.UUID nextCursor) {
 }
