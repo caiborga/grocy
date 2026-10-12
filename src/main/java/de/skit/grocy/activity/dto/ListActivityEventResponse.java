@@ -17,5 +17,6 @@ public record ListActivityEventResponse(
         String itemTitle,
         Integer metaCount,
         String metaText,
-        OffsetDateTime createdAt) {
+        OffsetDateTime createdAt,
+        boolean unread) {
 }

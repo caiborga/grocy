@@ -181,7 +181,7 @@
 						Änderungen
 					</h2>
 					<p class="activity-subtitle">
-						Was sich in diesem Haushalt getan hat
+						Was andere Haushaltsmitglieder geändert haben
 					</p>
 				</div>
 				<button
@@ -201,20 +201,23 @@
 					Lade Änderungen…
 				</p>
 				<p v-else-if="events.length === 0" class="activity-empty">
-					Noch keine Änderungen.
+					Keine Änderungen anderer Mitglieder in den letzten 7 Tagen.
 				</p>
 				<ul v-else class="activity-list">
 					<li
-						v-for="event in events"
+						v-for="event in groupedEvents"
 						:key="event.id"
 						class="activity-item"
 					>
+						<p v-if="event.dayLabel" class="activity-day">{{ event.dayLabel }}</p>
 						<button
 							type="button"
 							class="activity-item-btn"
+							:class="{ 'activity-item-btn--unread': event.unread }"
 							@click="goToList(event.listId)"
 						>
 							<span class="activity-item-text">
+								<span v-if="event.unread" class="activity-new">Neu · </span>
 								{{ formatEvent(event) }}
 							</span>
 							<span class="activity-item-meta">
@@ -225,13 +228,16 @@
 						</button>
 					</li>
 				</ul>
+				<button v-if="hasMore && !activityLoading" class="activity-more" :disabled="loadingMore" @click="loadOlder">
+					{{ loadingMore ? 'Lade ältere Änderungen…' : 'Ältere Änderungen laden' }}
+				</button>
 			</div>
 		</aside>
 	</div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from "vue";
+import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
 import { ElMessage } from "element-plus";
@@ -259,10 +265,54 @@ const activityStore = useActivityStore();
 
 const { me, role } = storeToRefs(userStore);
 const { activeHousehold } = storeToRefs(householdStore);
-const { unreadCount, events, loading: activityLoading, hasUnread } =
+const { unreadCount, events, loading: activityLoading, hasUnread, hasMore, loadingMore } =
 	storeToRefs(activityStore);
 
 const activityOpen = ref(false);
+watch(activityOpen, open => { activityStore.panelOpen = open; }, { flush: 'sync' });
+
+let activityRefreshTimer;
+function refreshActivityBadge() {
+	if (showNav.value && document.visibilityState === 'visible') {
+		void activityStore.refreshUnread();
+	}
+}
+onMounted(() => {
+	activityRefreshTimer = setInterval(refreshActivityBadge, 30000);
+	document.addEventListener('visibilitychange', refreshActivityBadge);
+	window.addEventListener('focus', refreshActivityBadge);
+});
+onBeforeUnmount(() => {
+	activityStore.panelOpen = false;
+	clearInterval(activityRefreshTimer);
+	document.removeEventListener('visibilitychange', refreshActivityBadge);
+	window.removeEventListener('focus', refreshActivityBadge);
+});
+
+const groupedEvents = computed(() => {
+	const groups = [];
+	for (const event of events.value) {
+		const previous = groups[groups.length - 1];
+		const date = new Date(event.createdAt).toLocaleDateString('de-DE');
+		if (previous && event.type.startsWith('ITEM_') && previous.type === event.type
+			&& previous.actorId === event.actorId && previous.listId === event.listId
+			&& event.itemId && !previous.itemIds.includes(event.itemId)
+			&& previous.unread === event.unread && previous.date === date
+			&& new Date(previous.lastAt) - new Date(event.createdAt) <= 5 * 60 * 1000) {
+			previous.count++;
+			previous.itemIds.push(event.itemId);
+			previous.lastAt = event.createdAt;
+		} else {
+			groups.push({ ...event, count: 1, date, lastAt: event.createdAt, itemIds: [event.itemId] });
+		}
+	}
+	const today = new Date().toLocaleDateString('de-DE');
+	const yesterdayDate = new Date();
+	yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+	const yesterday = yesterdayDate.toLocaleDateString('de-DE');
+	return groups.map((event, i) => ({ ...event, dayLabel: i === 0 || groups[i - 1].date !== event.date
+		? (event.date === today ? 'Heute' : event.date === yesterday ? 'Gestern' : event.date) : '' }));
+});
 
 const showNav = computed(() => !!route.meta.requiresAuth);
 
@@ -305,7 +355,7 @@ watch(
 	() => [showNav.value, activeHousehold.value?.id],
 	([authed, householdId]) => {
 		if (authed && householdId) {
-			activityStore.loadFeed(householdId);
+			activityStore.loadFeed(householdId).catch(() => ElMessage.error('Änderungen konnten nicht geladen werden.'));
 		} else if (!householdId) {
 			activityStore.reset();
 		}
@@ -319,10 +369,19 @@ function isActive(to) {
 
 async function openActivity() {
 	activityOpen.value = true;
-	if (activeHousehold.value?.id) {
-		await activityStore.loadFeed(activeHousehold.value.id);
+	try {
+		if (activeHousehold.value?.id) {
+			await activityStore.loadFeed(activeHousehold.value.id);
+		}
+		if (activityOpen.value) await activityStore.markRead();
+	} catch {
+		ElMessage.error('Änderungen konnten nicht geladen oder als gelesen markiert werden.');
 	}
-	await activityStore.markRead();
+}
+
+async function loadOlder() {
+	try { await activityStore.loadMore(); }
+	catch { ElMessage.error('Ältere Änderungen konnten nicht geladen oder als gelesen markiert werden.'); }
 }
 
 function closeActivity() {
@@ -337,6 +396,10 @@ function goToList(listId) {
 function formatEvent(event) {
 	const name = event.actorName || "Jemand";
 	const item = event.itemTitle ? `„${event.itemTitle}“` : null;
+	if (event.count > 1) {
+		const actions = { ITEM_ADDED: 'hinzugefügt', ITEM_CHECKED: 'abgehakt', ITEM_UNCHECKED: 'wieder geöffnet', ITEM_UPDATED: 'geändert', ITEM_DELETED: 'gelöscht' };
+		return `${name} hat ${event.count} Artikel ${actions[event.type]}`;
+	}
 
 	switch (event.type) {
 		case "ITEM_ADDED":
@@ -401,6 +464,11 @@ async function logout() {
 </script>
 
 <style scoped>
+.activity-day { margin: 16px 10px 6px; font-size: .8rem; font-weight: 600; color: #64748b; }
+.activity-item-btn--unread { background: #eff6ff; }
+.activity-new { color: #2563eb; }
+.activity-more { display: block; margin: 16px auto; padding: 10px 16px; border: 0; border-radius: .75rem; background: #f1f5f9; color: #1d4ed8; cursor: pointer; }
+.activity-more:disabled { opacity: .6; cursor: wait; }
 .app-shell {
 	min-height: 100vh;
 }

@@ -24,6 +24,14 @@ import jakarta.persistence.Table;
 @Table(name = "list_activity_events")
 public class ListActivityEventEntity {
 
+    @jakarta.persistence.ElementCollection
+    @jakarta.persistence.CollectionTable(name = "activity_event_readers", joinColumns = @JoinColumn(name = "event_id"))
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @Column(name = "user_id", nullable = false)
+    private java.util.Set<UUID> readers = new java.util.HashSet<>();
+
+    public java.util.Set<UUID> getReaders() { return readers; }
+
     @Id
     @GeneratedValue
     private UUID id;

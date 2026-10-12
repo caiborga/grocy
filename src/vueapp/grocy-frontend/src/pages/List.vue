@@ -629,6 +629,7 @@ import { listService, listWriteState } from "@/services/listService";
 import { subscribeToList } from "@/services/listLive";
 import ListPresence from "@/components/ListPresence.vue";
 import { useUserStore } from "@/stores/userStore";
+import { useActivityStore } from "@/stores/activityStore";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { PERM } from "@/auth/perms";
 import { usePermissions } from "@/composables/permissionComp";
@@ -639,6 +640,7 @@ const route = useRoute();
 const pageLoading = ref(false);
 const presentUsers = ref([]);
 const userStore = useUserStore();
+const activityStore = useActivityStore();
 const otherPresentUsers = computed(() => {
     const currentUserId = userStore.me?.id;
     return currentUserId ? presentUsers.value.filter(user => user.id !== currentUserId) : [];
@@ -711,12 +713,14 @@ function startLiveUpdates(id) {
         if (generation !== liveGeneration) return;
         if (event === "connected") {
             liveConnected.value = true;
+            void activityStore.refreshUnread();
             // Reload on every connection to recover changes missed while offline.
             scheduleRefresh();
         } else if (event === "presence") {
             presentUsers.value = data;
         } else if (event === "list-changed") {
             scheduleRefresh();
+            void activityStore.refreshUnread();
         }
     }, () => {
         if (generation !== liveGeneration) return;
