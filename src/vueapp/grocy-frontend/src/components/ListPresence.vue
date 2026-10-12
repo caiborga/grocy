@@ -136,15 +136,10 @@ onBeforeUnmount(() => {
     bottom: calc(7rem + env(safe-area-inset-bottom));
     z-index: 30;
     max-width: calc(100vw - 2rem);
-    padding: 0.5rem;
-    border: 1px solid rgba(15, 23, 42, 0.08);
-    border-radius: 1.25rem;
-    background: rgba(255, 255, 255, 0.96);
-    box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
 }
 .presence-chips {
     display: flex;
-    gap: 0.5rem;
+    gap: 0;
     overflow-x: auto;
     padding: 0.25rem;
 }
@@ -154,15 +149,23 @@ onBeforeUnmount(() => {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 1px solid #bfdbfe;
-    background: #eff6ff;
-    color: #1d4ed8;
-    font-size: 0.875rem;
+    border: 0;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 0.8rem;
     font-weight: 700;
     cursor: pointer;
 }
+.presence-chip + .presence-chip {
+    margin-left: -12px;
+}
+.presence-chip:nth-child(even) {
+    background: #dbeafe;
+}
 .presence-chip:hover,
+.presence-chip:focus-visible,
 .presence-chip[aria-expanded="true"] {
+    z-index: 1;
     background: #dbeafe;
 }
 .presence-chip:focus-visible {
